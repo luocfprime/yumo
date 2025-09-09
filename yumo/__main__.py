@@ -12,10 +12,10 @@ app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
 @app.command()
 def _(
-    plt_path: Path = typer.Option(
+    data_path: Path = typer.Option(
         ...,
-        "--plt",
-        help="Path to Tecplot .plt file",
+        "--data",
+        help="Path to data file (e.g. Tecplot .plt file)",
         exists=True,
         file_okay=True,
         dir_okay=False,
@@ -53,7 +53,7 @@ def _(
 
     PolyscopeApp(
         config=Config(
-            plt_path=plt_path,
+            data_path=data_path,
             mesh_path=mesh_path,
             sample_rate=sample_rate,
         )
