@@ -162,30 +162,6 @@ class PolyscopeApp:
             enabled=True,
         )
 
-    def _ui_points(self):
-        """Points related UI"""
-        points_structure = self.structures.get("points")
-        if not isinstance(points_structure, PointCloudStructure):
-            return
-
-        with ui_tree_node("Points", open_first_time=True) as expanded:
-            if not expanded:
-                return
-
-            changed, show = psim.Checkbox("Show", points_structure.enabled)
-            if changed:
-                points_structure.set_enabled(show)
-
-            psim.SameLine()
-            changed, radius = psim.SliderFloat(
-                "Radius", self.context.points_size, v_min=1e-4, v_max=5e-2, format="%.4g"
-            )
-            if changed:
-                self.context.points_size = radius
-                points_structure.set_radius(radius)
-
-        psim.Separator()
-
     # --- Main Loop ---
 
     def callback(self) -> None:
@@ -202,13 +178,18 @@ class PolyscopeApp:
             self._should_add_quantities = False  # Prevent this from running again
 
         # Other callbacks
+        for structure in self.structures.values():
+            structure.callback()
+
         self.slices.callback()
 
         # Build the UI
         self._ui_top_text_brief()
         self._ui_colorbar_controls()
         self._ui_colorbar_display()
-        self._ui_points()
+
+        for structure in self.structures.values():
+            structure.ui()
 
     def run(self):
         """Initialize and run the Polyscope application."""

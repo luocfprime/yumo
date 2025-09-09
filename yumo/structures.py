@@ -4,9 +4,11 @@ from typing import ClassVar
 
 import numpy as np
 import polyscope as ps
+import polyscope.imgui as psim
 from scipy.spatial import KDTree
 
 from yumo.context import Context
+from yumo.ui import ui_tree_node
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +84,16 @@ class Structure(ABC):
         """Check if the structure has valid data to be registered."""
         pass
 
+    @abstractmethod
+    def ui(self):
+        """Update structure related UI"""
+        pass
+
+    @abstractmethod
+    def callback(self):
+        """Update structure related callback"""
+        pass
+
 
 class PointCloudStructure(Structure):
     """Represents a point cloud structure."""
@@ -115,6 +127,29 @@ class PointCloudStructure(Structure):
         if self.polyscope_structure:
             self.polyscope_structure.set_radius(radius, relative=relative)
 
+    def ui(self):
+        """Points related UI"""
+        with ui_tree_node("Points", open_first_time=True) as expanded:
+            if not expanded:
+                return
+
+            changed, show = psim.Checkbox("Show", self.enabled)
+            if changed:
+                self.set_enabled(show)
+
+            psim.SameLine()
+            changed, radius = psim.SliderFloat(
+                "Radius", self.app_context.points_size, v_min=1e-4, v_max=5e-2, format="%.4g"
+            )
+            if changed:
+                self.app_context.points_size = radius
+                self.set_radius(radius)
+
+        psim.Separator()
+
+    def callback(self):
+        pass
+
 
 class MeshStructure(Structure):
     """Represents a surface mesh structure."""
@@ -144,7 +179,9 @@ class MeshStructure(Structure):
 
         logger.info(f"Preparing nearest-neighbor scalar data for mesh '{self.name}'...")
         kdtree = KDTree(source_points[:, :3])
-        _, nearest_indices = kdtree.query(self.vertices, k=1)
+        _, nearest_indices = kdtree.query(
+            self.vertices, k=1
+        )  # TODO: check if using self.vertices make sense? Also distance_upper_bound
         interpolated_values = source_points[nearest_indices, 3]
         self.prepared_quantities[self.QUANTITY_NAME] = interpolated_values
 
@@ -154,3 +191,9 @@ class MeshStructure(Structure):
         mesh = ps.register_surface_mesh(self.name, self.vertices, self.faces)
         mesh.set_material("clay")
         mesh.set_color([0.7, 0.7, 0.7])
+
+    def ui(self):
+        pass
+
+    def callback(self):
+        pass
