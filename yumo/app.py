@@ -12,7 +12,7 @@ from yumo.context import Context
 from yumo.slices import Slices
 from yumo.structures import MeshStructure, PointCloudStructure, Structure
 from yumo.ui import ui_combo, ui_tree_node
-from yumo.utils import parse_plt_file
+from yumo.utils import generate_colorbar_image, parse_plt_file
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +145,23 @@ class PolyscopeApp:
 
         psim.Separator()
 
+    def _ui_colorbar_display(self):
+        """Add colorbar image"""
+        colorbar_img = generate_colorbar_image(
+            colorbar_height=300,
+            colorbar_width=120,
+            cmap=self.context.cmap,
+            c_min=self.context.color_min,
+            c_max=self.context.color_max,
+        )
+        ps.add_color_image_quantity(
+            "colorbar",
+            colorbar_img,
+            image_origin="upper_left",
+            show_in_imgui_window=True,
+            enabled=True,
+        )
+
     def _ui_points(self):
         """Points related UI"""
         points_structure = self.structures.get("points")
@@ -190,6 +207,7 @@ class PolyscopeApp:
         # Build the UI
         self._ui_top_text_brief()
         self._ui_colorbar_controls()
+        self._ui_colorbar_display()
         self._ui_points()
 
     def run(self):

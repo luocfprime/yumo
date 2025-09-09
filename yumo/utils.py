@@ -46,7 +46,7 @@ def parse_plt_file(file_path: str | Path, skip_zeros: bool = True) -> np.ndarray
 
 
 def generate_colorbar_image(
-    colorbar_height: int, colorbar_width: int, cmap: str, display_vmin: float, display_vmax: float
+    colorbar_height: int, colorbar_width: int, cmap: str, c_min: float, c_max: float
 ) -> np.ndarray:
     """
     Generate a colorbar image as a numpy array.
@@ -55,8 +55,8 @@ def generate_colorbar_image(
         colorbar_height: Height of the colorbar image
         colorbar_width: Width of the colorbar image
         cmap: Matplotlib colormap name
-        display_vmin: Minimum value for the colorbar
-        display_vmax: Maximum value for the colorbar
+        c_min: Minimum value for the colorbar
+        c_max: Maximum value for the colorbar
 
     Returns:
         Numpy array of the colorbar image with values in [0, 1]
@@ -89,7 +89,7 @@ def generate_colorbar_image(
         )
 
     num_ticks = 7
-    tick_values = np.linspace(display_vmax, display_vmin, num_ticks)
+    tick_values = np.linspace(c_max, c_min, num_ticks)
     tick_positions = np.linspace(bar_start_y, bar_end_y, num_ticks)
     text_x_pos = bar_x_pos + bar_width + 10
 
