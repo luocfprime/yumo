@@ -4,7 +4,6 @@ site_url: https://luocfprime.github.io/yumo
 site_description: Scalar field visualization using Polyscope.
 site_author: Chaofan Luo
 edit_uri: edit/main/docs/
-project_name: luocfprime/yumo
 copyright: Maintained by <a href="https://github.com/luocfprime">luocfprime</a>.
 
 nav:

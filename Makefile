@@ -3,6 +3,12 @@ install: ## Install the virtual environment and install the pre-commit hooks
 	@echo "🚀 Creating virtual environment using uv"
 	@uv sync
 
+.PHONY: format
+format: ## Format the code using black
+	@echo "🚀 Formatting code: Running ruff"
+	@ruff format .
+	@ruff check --fix .
+
 .PHONY: check
 check: ## Run code quality tools.
 	@echo "🚀 Checking lock file consistency with 'pyproject.toml'"

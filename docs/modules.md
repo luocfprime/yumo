@@ -1,1 +1,1 @@
-::: yumo.foo
+::: yumo.ui

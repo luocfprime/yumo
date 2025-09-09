@@ -5,12 +5,11 @@ description = "Scalar field visualization using Polyscope."
 authors = [{ name = "Chaofan Luo" }]
 readme = "README.md"
 keywords = ['python']
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -18,12 +17,16 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
-[project.urls]
-Homepage = "https://luocfprime.github.io/yumo/"
-Repository = "https://github.com/luocfprime/yumo"
-Documentation = "https://luocfprime.github.io/yumo/"
+dependencies = [
+    "matplotlib>=3.9.4",
+    "numpy<2",
+    "polyscope>=2.5.0",
+    "potpourri3d>=1.3",
+    "tqdm>=4.67.1",
+    "typer>=0.17.4",
+]
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "pytest>=7.2.0",
     "pytest-cov>=4.0.0",
@@ -36,7 +39,17 @@ dev = [
     "mkdocs>=1.4.2",
     "mkdocs-material>=8.5.10",
     "mkdocstrings[python]>=0.26.1",
+    "tomlkit>=0.13.3",
 ]
+
+[project.scripts]
+yumo = "yumo.__main__:main"
+
+[project.urls]
+Homepage = "https://luocfprime.github.io/yumo/"
+Repository = "https://github.com/luocfprime/yumo"
+Documentation = "https://luocfprime.github.io/yumo/"
+
 
 [build-system]
 requires = ["setuptools >= 61.0"]
@@ -49,13 +62,13 @@ py-modules = ["yumo"]
 files = [
     "yumo"
 ]
-disallow_untyped_defs = true
 disallow_any_unimported = true
 no_implicit_optional = true
 check_untyped_defs = true
 warn_return_any = true
 warn_unused_ignores = true
 show_error_codes = true
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -103,6 +116,8 @@ ignore = [
     "E501",
     # DoNotAssignLambda
     "E731",
+    # Avoid specifying long messages outside the exception class
+    "TRY003"
 ]
 
 [tool.ruff.lint.per-file-ignores]
