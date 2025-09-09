@@ -1,0 +1,52 @@
+site_name: yumo
+repo_url: https://github.com/luocfprime/yumo
+site_url: https://luocfprime.github.io/yumo
+site_description: Scalar field visualization using Polyscope.
+site_author: Chaofan Luo
+edit_uri: edit/main/docs/
+project_name: luocfprime/yumo
+copyright: Maintained by <a href="https://github.com/luocfprime">luocfprime</a>.
+
+nav:
+  - Home: index.md
+  - Modules: modules.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [
+            "yumo"
+            ]
+theme:
+  name: material
+  feature:
+    tabs: true
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/git-alt
+
+extra:
+  social:
+    - icon: fontawesome/brands/git-alt
+      link: https://github.com/luocfprime/yumo
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
