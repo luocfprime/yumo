@@ -194,6 +194,9 @@ class PolyscopeApp:
 
     def run(self):
         """Initialize and run the Polyscope application."""
+        ps.set_program_name("Yumo")
+        ps.set_print_prefix("[Yumo][Polyscope] ")
+
         ps.init()
         ps.set_user_callback(self.callback)
         ps.show()
