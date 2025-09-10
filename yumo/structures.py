@@ -8,7 +8,7 @@ import polyscope.imgui as psim
 from scipy.spatial import KDTree
 
 from yumo.context import Context
-from yumo.ui import ui_tree_node
+from yumo.ui import ui_combo, ui_tree_node
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +123,10 @@ class PointCloudStructure(Structure):
         p.set_radius(self.app_context.points_radius, relative=False)
         p.set_point_render_mode(self.app_context.points_render_mode)
 
+    def set_point_render_mode(self, mode: str):
+        if self.polyscope_structure:
+            self.polyscope_structure.set_point_render_mode(mode)
+
     def set_radius(self, radius: float, relative: bool = False):
         if self.polyscope_structure:
             self.polyscope_structure.set_radius(radius, relative=relative)
@@ -148,6 +152,14 @@ class PointCloudStructure(Structure):
             if changed:
                 self.app_context.points_radius = radius
                 self.set_radius(radius)
+
+            with ui_combo("Render Mode", self.app_context.points_render_mode) as expanded:
+                if expanded:
+                    for mode in ["sphere", "quad"]:
+                        selected, _ = psim.Selectable(mode, mode == self.app_context.points_render_mode)
+                        if selected and mode != self.app_context.points_render_mode:
+                            self.app_context.points_render_mode = mode
+                            self.set_point_render_mode(mode)
 
         psim.Separator()
 
