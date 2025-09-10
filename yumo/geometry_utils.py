@@ -2,6 +2,8 @@ import logging
 
 import numpy as np
 import xatlas
+from scipy.interpolate import griddata
+from scipy.ndimage import distance_transform_edt
 from scipy.spatial import KDTree
 
 logger = logging.getLogger(__name__)
@@ -202,3 +204,56 @@ def bake_to_texture(
     tex_sum[mask] /= tex_count[mask]
 
     return tex_sum
+
+
+def nearest_fill(texture):
+    # mask: 1 for missing (0), 0 for valid
+    mask = texture == 0
+
+    dist, indices = distance_transform_edt(mask, return_indices=True)
+
+    # Fill with nearest value
+    filled = texture[tuple(indices)]
+    return filled
+
+
+def linear_fill(texture):
+    h, w = texture.shape
+    y, x = np.mgrid[0:h, 0:w]
+
+    known = texture > 0
+    coords = np.column_stack((x[known], y[known]))
+    values = texture[known]
+
+    filled = griddata(coords, values, (x, y), method="linear", fill_value=0)
+    return filled
+
+
+def denoise_texture(texture, method="linear"):
+    """
+    Fill missing (zero) values in a sparse 2D texture map using interpolation.
+
+    Args:
+        texture (numpy.ndarray):
+            A 2D NumPy array representing the texture map.
+            Zero entries are treated as missing data to be filled.
+        method (str, optional):
+            Interpolation method to use. Options are:
+            - "linear": Fill using linear interpolation over known non-zero points.
+            - "nearest": Fill using nearest-neighbor interpolation.
+            Defaults to "linear".
+
+    Returns:
+        numpy.ndarray:
+            A 2D NumPy array of the same shape as `texture`,
+            with missing (zero) values replaced by interpolated values.
+
+    Raises:
+        ValueError: If `method` is not one of {"linear", "nearest"}.
+    """
+    if method == "linear":
+        return linear_fill(texture)
+    elif method == "nearest":
+        return nearest_fill(texture)
+    else:
+        raise ValueError(f"Invalid method: {method}. Must be one of 'linear' or 'nearest'.")
