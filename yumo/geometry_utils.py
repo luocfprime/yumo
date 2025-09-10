@@ -151,7 +151,7 @@ def map_to_uv(
     return sample_uvs
 
 
-def query_scalar_field(points_coord: np.ndarray, data_points: np.ndarray):
+def query_scalar_field(points_coord: np.ndarray, data_points: np.ndarray) -> np.ndarray:
     """
     Query scalar field f(x,y,z) in vectorized form.
 
@@ -259,14 +259,14 @@ def denoise_texture(texture, method="linear"):
         raise ValueError(f"Invalid method: {method}. Must be one of 'linear' or 'nearest'.")
 
 
-def generate_slice_mesh(center: np.ndarray, h: int, w: int, rh: int, rw: int) -> tuple[np.ndarray, np.ndarray]:
+def generate_slice_mesh(center: np.ndarray, h: float, w: float, rh: int, rw: int) -> tuple[np.ndarray, np.ndarray]:
     """
     Generate a slice plane mesh in the XY-plane, centered on `center`.
 
     Args:
         center (np.ndarray): 3D coordinate where the center of the mesh will be placed (shape (3,))
-        h (int): physical height of the plane
-        w (int): physical width of the plane
+        h (float): physical height of the plane
+        w (float): physical width of the plane
         rh (int): resolution along height (number of vertices)
         rw (int): resolution along width (number of vertices)
 

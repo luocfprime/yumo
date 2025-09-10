@@ -11,7 +11,7 @@ from yumo.constants import CMAPS
 from yumo.context import Context
 from yumo.slices import Slices
 from yumo.structures import MeshStructure, PointCloudStructure, Structure
-from yumo.ui import ui_combo, ui_tree_node
+from yumo.ui import ui_combo, ui_item_width, ui_tree_node
 from yumo.utils import estimate_densest_point_distance, generate_colorbar_image, parse_plt_file
 
 logger = logging.getLogger(__name__)
@@ -88,9 +88,11 @@ class PolyscopeApp:
             structure.prepare_quantities()
 
     def update_all_scalar_quantities_colormap(self):
-        """Update colormaps on all structures."""
+        """Update colormaps on all structures (including slices)."""
         for structure in self.structures.values():
             structure.update_all_quantities_colormap()
+
+        self.slices.update_all_quantities_colormap()
 
     # --- UI Methods ---
 
@@ -110,7 +112,18 @@ class PolyscopeApp:
             psim.Text(f"Points: {self.context.points.shape[0]:,}")
             psim.SameLine()
             psim.Text(f"Points densest distance: {self.context.points_densest_distance:.4g}")
-            psim.Text(f"Data range: [{self.context.min_value:.4g}, {self.context.max_value:.4g}]")
+
+            psim.Text(
+                f"Points center: ({self.context.center[0]:.2f},{self.context.center[1]:.2f},{self.context.center[2]:.2f})"
+            )
+            psim.Text(
+                f"Bbox min: ({self.context.bbox_min[0]:.2f},{self.context.bbox_min[1]:.2f},{self.context.bbox_min[2]:.2f})"
+            )
+            psim.Text(
+                f"Bbox max: ({self.context.bbox_max[0]:.2f},{self.context.bbox_max[1]:.2f},{self.context.bbox_max[2]:.2f})"
+            )
+
+            psim.Text(f"Data range: [{self.context.min_value:.2g}, {self.context.max_value:.2g}]")
 
         psim.Separator()
 
@@ -135,30 +148,37 @@ class PolyscopeApp:
             data_range = self.context.max_value - self.context.min_value
             v_speed = data_range / 1000.0 if data_range > 0 else 0.01
 
-            # Min/Max value controls
-            changed_min, new_min = psim.DragFloat(
-                "Min Value", self.context.color_min, v_speed, self.context.min_value, self.context.max_value, "%.4g"
-            )
-            if changed_min:
-                self.context.color_min = new_min
-                needs_update = True
+            with ui_item_width(100):
+                # Min/Max value controls
+                changed_min, new_min = psim.DragFloat(
+                    "Min Value", self.context.color_min, v_speed, self.context.min_value, self.context.max_value, "%.4g"
+                )
 
-            changed_max, new_max = psim.DragFloat(
-                "Max Value", self.context.color_max, v_speed, self.context.min_value, self.context.max_value, "%.4g"
-            )
-            if changed_max:
-                self.context.color_max = new_max
-                needs_update = True
+                psim.SameLine()
 
-            self.context.color_max = max(self.context.color_min, self.context.color_max)
+                if changed_min:
+                    self.context.color_min = new_min
+                    needs_update = True
 
-            if psim.Button("Reset Range"):
-                self.context.color_min = self.context.min_value
-                self.context.color_max = self.context.max_value
-                needs_update = True
+                changed_max, new_max = psim.DragFloat(
+                    "Max Value", self.context.color_max, v_speed, self.context.min_value, self.context.max_value, "%.4g"
+                )
 
-            if needs_update:
-                self.update_all_scalar_quantities_colormap()
+                psim.SameLine()
+
+                if changed_max:
+                    self.context.color_max = new_max
+                    needs_update = True
+
+                self.context.color_max = max(self.context.color_min, self.context.color_max)
+
+                if psim.Button("Reset Range"):
+                    self.context.color_min = self.context.min_value
+                    self.context.color_max = self.context.max_value
+                    needs_update = True
+
+                if needs_update:
+                    self.update_all_scalar_quantities_colormap()
 
         psim.Separator()
 

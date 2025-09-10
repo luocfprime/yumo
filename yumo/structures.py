@@ -38,6 +38,8 @@ class Structure(ABC):
 
     def add_prepared_quantities(self):
         """Adds all prepared scalar quantities to the registered Polyscope structure."""
+        logger.info(f"Updating quantities for structure: '{self.name}'")
+
         if not self._is_registered:
             raise RuntimeError("Structure must be registered before adding quantities.")
 
