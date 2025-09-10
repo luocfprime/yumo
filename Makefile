@@ -4,7 +4,7 @@ install: ## Install the virtual environment and install the pre-commit hooks
 	@uv sync
 
 .PHONY: format
-format: ## Format the code using black
+format: ## Format the code using ruff
 	@echo "🚀 Formatting code: Running ruff"
 	@ruff format .
 	@ruff check --fix .
