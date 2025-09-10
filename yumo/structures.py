@@ -8,7 +8,7 @@ import polyscope.imgui as psim
 from scipy.spatial import KDTree
 
 from yumo.context import Context
-from yumo.ui import ui_combo, ui_tree_node
+from yumo.ui import ui_combo, ui_item_width, ui_tree_node
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +25,11 @@ class Structure(ABC):
         self._quantities_added = False
         self.prepared_quantities: dict[str, np.ndarray] = {}
 
-    def register(self):
+    def register(self, force: bool = False):
         """Registers the structure's geometry with Polyscope. (Called every frame, but runs once)."""
-        if self._is_registered or not self.is_valid():
+        if not self.is_valid():
+            return
+        if self._is_registered and not force:
             return
         self._do_register()
         if self.polyscope_structure:
@@ -137,31 +139,35 @@ class PointCloudStructure(Structure):
             if not expanded:
                 return
 
-            changed, show = psim.Checkbox("Show", self.enabled)
-            if changed:
-                self.set_enabled(show)
+            with ui_item_width(100):
+                changed, show = psim.Checkbox("Show", self.enabled)
+                if changed:
+                    self.set_enabled(show)
 
-            psim.SameLine()
-            changed, radius = psim.SliderFloat(
-                "Radius",
-                self.app_context.points_radius,
-                v_min=self.app_context.points_densest_distance * 0.01,
-                v_max=self.app_context.points_densest_distance * 0.20,
-                format="%.4g",
-            )
-            if changed:
-                self.app_context.points_radius = radius
-                self.set_radius(radius)
+                psim.SameLine()
 
-            with ui_combo("Render Mode", self.app_context.points_render_mode) as expanded:
-                if expanded:
-                    for mode in ["sphere", "quad"]:
-                        selected, _ = psim.Selectable(mode, mode == self.app_context.points_render_mode)
-                        if selected and mode != self.app_context.points_render_mode:
-                            self.app_context.points_render_mode = mode
-                            self.set_point_render_mode(mode)
+                changed, radius = psim.SliderFloat(
+                    "Radius",
+                    self.app_context.points_radius,
+                    v_min=self.app_context.points_densest_distance * 0.01,
+                    v_max=self.app_context.points_densest_distance * 0.20,
+                    format="%.4g",
+                )
+                if changed:
+                    self.app_context.points_radius = radius
+                    self.set_radius(radius)
 
-        psim.Separator()
+                psim.SameLine()
+
+                with ui_combo("Render Mode", self.app_context.points_render_mode) as expanded:
+                    if expanded:
+                        for mode in ["sphere", "quad"]:
+                            selected, _ = psim.Selectable(mode, mode == self.app_context.points_render_mode)
+                            if selected and mode != self.app_context.points_render_mode:
+                                self.app_context.points_render_mode = mode
+                                self.set_point_render_mode(mode)
+
+            psim.Separator()
 
     def callback(self):
         pass
@@ -217,6 +223,8 @@ class MeshStructure(Structure):
             changed, show = psim.Checkbox("Show", self.enabled)
             if changed:
                 self.set_enabled(show)
+
+            psim.Separator()
 
     def callback(self):
         pass

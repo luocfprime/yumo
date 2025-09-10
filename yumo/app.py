@@ -31,7 +31,7 @@ class PolyscopeApp:
     def __init__(self, config: Config):
         self.config = config
         self.context = Context()
-        self.slices = Slices()
+        self.slices = Slices("slices", self.context)
         self.structures: dict[str, Structure] = {}
         self._should_add_quantities = True
 
@@ -52,6 +52,10 @@ class PolyscopeApp:
             points = points[indices]
 
         self.context.points = points
+
+        self.context.center = np.mean(points[:, :3], axis=0)
+        self.context.bbox_min = np.min(points[:, :3], axis=0)
+        self.context.bbox_max = np.max(points[:, :3], axis=0)
 
         self.context.points_densest_distance = estimate_densest_point_distance(
             points[:, :3],
@@ -203,6 +207,8 @@ class PolyscopeApp:
 
         for structure in self.structures.values():
             structure.ui()
+
+        self.slices.ui()
 
     def run(self):
         """Initialize and run the Polyscope application."""

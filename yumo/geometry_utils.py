@@ -257,3 +257,42 @@ def denoise_texture(texture, method="linear"):
         return nearest_fill(texture)
     else:
         raise ValueError(f"Invalid method: {method}. Must be one of 'linear' or 'nearest'.")
+
+
+def generate_slice_mesh(center: np.ndarray, h: int, w: int, rh: int, rw: int) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Generate a slice plane mesh in the XY-plane, centered on `center`.
+
+    Args:
+        center (np.ndarray): 3D coordinate where the center of the mesh will be placed (shape (3,))
+        h (int): physical height of the plane
+        w (int): physical width of the plane
+        rh (int): resolution along height (number of vertices)
+        rw (int): resolution along width (number of vertices)
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            vertices: (N, 3) array of 3D coordinates
+            faces: (M, 3) array of integer indices into vertices
+    """
+    # Generate grid in local XY-plane
+    y = np.linspace(-h / 2, h / 2, rh)
+    x = np.linspace(-w / 2, w / 2, rw)
+    xx, yy = np.meshgrid(x, y)
+
+    vertices = np.stack([xx.ravel(), yy.ravel(), np.zeros(xx.size)], axis=1) + center
+
+    # Vectorized face construction
+    # indices grid
+    idx = np.arange(rh * rw).reshape(rh, rw)
+
+    # Lower-left corners of each quad
+    v0 = idx[:-1, :-1].ravel()
+    v1 = idx[:-1, 1:].ravel()
+    v2 = idx[1:, :-1].ravel()
+    v3 = idx[1:, 1:].ravel()
+
+    # 2 triangles per quad
+    faces = np.stack([np.column_stack([v0, v1, v2]), np.column_stack([v1, v3, v2])], axis=1).reshape(-1, 3)
+
+    return vertices, faces
