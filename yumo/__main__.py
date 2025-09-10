@@ -36,7 +36,11 @@ def _(
         "-s",
         min=0.0,
         max=1.0,
-        help="Sampling rate for large datasets (0.0-1.0).",
+        help="Sampling rate for large datasets (0.0-1.0)",
+    ),
+    skip_zeros: bool = typer.Option(
+        True,
+        help="Skip loading points with values = 0.0",
     ),
     log_level: str = typer.Option(
         "INFO",
@@ -56,6 +60,7 @@ def _(
             data_path=data_path,
             mesh_path=mesh_path,
             sample_rate=sample_rate,
+            skip_zeros=skip_zeros,
         )
     ).run()
 

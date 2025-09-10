@@ -23,6 +23,7 @@ class Config:
     data_path: Path
     mesh_path: Path | None
     sample_rate: float
+    skip_zeros: bool
 
 
 # --- Main Application ---
@@ -40,7 +41,7 @@ class PolyscopeApp:
         """Load data from files, create structures, and prepare their quantities."""
         # 1. Load raw data
         logger.info(f"Loading data from {self.config.data_path}")
-        points = parse_plt_file(self.config.data_path)
+        points = parse_plt_file(self.config.data_path, skip_zeros=self.config.skip_zeros)
         if self.config.sample_rate < 1.0:
             logger.info(
                 f"Downsampling points from {points.shape[0]:,} to {int(points.shape[0] * self.config.sample_rate):,}"
