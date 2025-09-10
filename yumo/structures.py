@@ -209,7 +209,14 @@ class MeshStructure(Structure):
         mesh.set_color([0.7, 0.7, 0.7])
 
     def ui(self):
-        pass
+        """Mesh related UI"""
+        with ui_tree_node("Mesh", open_first_time=True) as expanded:
+            if not expanded:
+                return
+
+            changed, show = psim.Checkbox("Show", self.enabled)
+            if changed:
+                self.set_enabled(show)
 
     def callback(self):
         pass
