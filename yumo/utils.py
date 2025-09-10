@@ -5,6 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from scipy.spatial import KDTree
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -107,3 +108,60 @@ def generate_colorbar_image(
         draw.text((text_x_pos, pos - 6), label, fill="black", font=font)
 
     return np.array(img) / 255.0
+
+
+def estimate_densest_point_distance(points: np.ndarray, k: int = 1000, quantile: float = 0.01) -> float:
+    """
+    Estimate the densest distance between points and their nearest neighbors.
+
+    This function samples k points from the input dataset, finds their nearest
+    neighbors, and calculates the average distance after filtering outliers.
+
+    Args:
+        points: Array of shape (n, d) containing n points in d-dimensional space.
+        k: Number of points to sample for the estimation. Default is 1000.
+        quantile: Quantile threshold for outlier removal. Default is 0.01.
+            Only distances in the range [min, quantile] are considered.
+
+    Returns:
+        float: Estimated densest distance to nearest neighbor after outlier filtering.
+
+    Raises:
+        ValueError: If points is empty or not a 2D array.
+    """
+    # Input validation
+    if points.ndim != 2 or points.size == 0:
+        raise ValueError("Input 'points' must be a non-empty 2D array")
+
+    n = points.shape[0]
+
+    # Handle case where number of points is less than k
+    sample_size = min(n, k)
+    sample_indices = np.random.choice(n, size=sample_size, replace=False) if n > 1 else np.array([0])
+    sampled_points = points[sample_indices]
+
+    # Handle edge case of a single point
+    if n == 1:
+        return 0.0
+
+    # Build KD-tree for efficient nearest neighbor search
+    kdtree = KDTree(points)
+
+    # Find distance to nearest neighbor for each sampled point
+    # k=2 returns the point itself (distance 0) and the nearest neighbor
+    distances, _ = kdtree.query(sampled_points, k=2)
+
+    # Take the second column (nearest non-self neighbor)
+    nearest_distances = distances[:, 1]
+
+    # Apply outlier filtering using the quantile parameter
+    if len(nearest_distances) > 1:
+        threshold = np.quantile(nearest_distances, quantile)
+        filtered_distances = nearest_distances[nearest_distances <= threshold]
+        # Use original distances if filtering removed everything
+        if len(filtered_distances) == 0:
+            filtered_distances = nearest_distances
+    else:
+        filtered_distances = nearest_distances
+
+    return float(np.mean(filtered_distances))

@@ -12,7 +12,7 @@ from yumo.context import Context
 from yumo.slices import Slices
 from yumo.structures import MeshStructure, PointCloudStructure, Structure
 from yumo.ui import ui_combo, ui_tree_node
-from yumo.utils import generate_colorbar_image, parse_plt_file
+from yumo.utils import estimate_densest_point_distance, generate_colorbar_image, parse_plt_file
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,17 @@ class PolyscopeApp:
                 points.shape[0], size=int(points.shape[0] * self.config.sample_rate), replace=False
             )
             points = points[indices]
+
         self.context.points = points
+
+        self.context.points_densest_distance = estimate_densest_point_distance(
+            points[:, :3],
+            k=5000,  # TODO: hard-coded
+            quantile=0.01,
+        )
+
+        # set the display radius to be 10% of the densest distance
+        self.context.points_radius = 0.1 * self.context.points_densest_distance
 
         if self.config.mesh_path:
             logger.info(f"Loading mesh from {self.config.mesh_path}")
@@ -94,6 +104,8 @@ class PolyscopeApp:
                 )
 
             psim.Text(f"Points: {self.context.points.shape[0]:,}")
+            psim.SameLine()
+            psim.Text(f"Points densest distance: {self.context.points_densest_distance:.4g}")
             psim.Text(f"Data range: [{self.context.min_value:.4g}, {self.context.max_value:.4g}]")
 
         psim.Separator()

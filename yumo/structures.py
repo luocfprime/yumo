@@ -120,7 +120,7 @@ class PointCloudStructure(Structure):
         """Register only the point cloud geometry (XYZ coordinates)."""
         logger.info(f"Registering point cloud geometry: '{self.name}'")
         p = ps.register_point_cloud(self.name, self.points[:, :3])
-        p.set_radius(self.app_context.points_size, relative=False)
+        p.set_radius(self.app_context.points_radius, relative=False)
         p.set_point_render_mode(self.app_context.points_render_mode)
 
     def set_radius(self, radius: float, relative: bool = False):
@@ -139,10 +139,14 @@ class PointCloudStructure(Structure):
 
             psim.SameLine()
             changed, radius = psim.SliderFloat(
-                "Radius", self.app_context.points_size, v_min=1e-4, v_max=5e-2, format="%.4g"
+                "Radius",
+                self.app_context.points_radius,
+                v_min=self.app_context.points_densest_distance * 0.01,
+                v_max=self.app_context.points_densest_distance * 0.20,
+                format="%.4g",
             )
             if changed:
-                self.app_context.points_size = radius
+                self.app_context.points_radius = radius
                 self.set_radius(radius)
 
         psim.Separator()

@@ -17,9 +17,11 @@ class Context:
     min_value: float = None
     max_value: float = None
 
+    points_densest_distance: float = None
+
     # Settings
     cmap: str = CMAPS[0]
     color_min: float = None
     color_max: float = None
-    points_size: float = 0.005
+    points_radius: float = 0.005
     points_render_mode: str = "sphere"
