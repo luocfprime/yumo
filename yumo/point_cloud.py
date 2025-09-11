@@ -21,9 +21,12 @@ class PointCloudStructure(Structure):
         super().__init__(name, app_context, **kwargs)
         self.points = points
 
+        # initialize threshold at median of scalar values
+        self.visualize_threshold = np.median(points[:, 3])
+
         # 10% of the densest point distance
         self._points_radius = 0.1 * self.app_context.points_densest_distance
-        self._points_render_mode = "sphere"  # one of "sphere" or "quad", the latter is less costly
+        self._points_render_mode = "sphere"  # one of "sphere" or "quad"
 
     @property
     def polyscope_structure(self):
@@ -32,17 +35,41 @@ class PointCloudStructure(Structure):
     def is_valid(self) -> bool:
         return self.points is not None and self.points.shape[0] > 0
 
+    def get_filtered_points(self):
+        """Filter points above threshold."""
+        if not self.is_valid():
+            return np.empty((0, 4))
+        return self.points[self.points[:, 3] >= self.visualize_threshold]
+
     def prepare_quantities(self):
-        """Prepare the scalar data from the 4th column of the points array."""
-        if self.is_valid():
-            self.prepared_quantities[self.QUANTITY_NAME] = self.points[:, 3]
+        """Prepare scalar data only for filtered points."""
+        filtered = self.get_filtered_points()
+        if filtered.shape[0] > 0:
+            self.prepared_quantities[self.QUANTITY_NAME] = filtered[:, 3]
+        else:
+            self.prepared_quantities[self.QUANTITY_NAME] = np.array([])
 
     def _do_register(self):
         """Register only the point cloud geometry (XYZ coordinates)."""
-        logger.debug(f"Registering point cloud geometry: '{self.name}'")
-        p = ps.register_point_cloud(self.name, self.points[:, :3])
+        logger.debug(f"Registering point cloud geometry (threshold={self.visualize_threshold:.3f}): '{self.name}'")
+
+        filtered = self.get_filtered_points()
+        if filtered.shape[0] == 0:
+            logger.debug("No points left after threshold filtering")
+            return
+
+        p = ps.register_point_cloud(self.name, filtered[:, :3])
         p.set_radius(self._points_radius, relative=False)
         p.set_point_render_mode(self._points_render_mode)
+
+        # Register scalar values
+        self.prepare_quantities()
+        if len(self.prepared_quantities[self.QUANTITY_NAME]) > 0:
+            p.add_scalar_quantity(
+                self.QUANTITY_NAME,
+                self.prepared_quantities[self.QUANTITY_NAME],
+                enabled=True,
+            )
 
     def set_point_render_mode(self, mode: str):
         if self.polyscope_structure:
@@ -87,6 +114,24 @@ class PointCloudStructure(Structure):
                                 self.set_point_render_mode(mode)
 
             psim.Separator()
+
+            # --- Threshold control ---
+            if self.is_valid():
+                q_values = self.points[:, 3]
+                min_val, max_val = float(q_values.min()), float(q_values.max())
+
+                changed, new_thresh = psim.DragFloat(
+                    "Threshold",
+                    self.visualize_threshold,
+                    v_speed=(max_val - min_val) / 10000.0,
+                    v_min=min_val,
+                    v_max=max_val,
+                    format="%.4g",
+                )
+                if changed:
+                    self.visualize_threshold = new_thresh
+                    self.register(force=True)  # re-register structure + scalar quantities
+                    self.update_all_quantities_colormap()
 
     def callback(self):
         pass
