@@ -64,7 +64,7 @@ def _(
         help="Sampling rate for large datasets (0.0-1.0)",
     ),
     skip_zeros: bool = typer.Option(
-        True,
+        False,
         help="Skip loading points with values = 0.0",
     ),
     log_level: str = typer.Option(
