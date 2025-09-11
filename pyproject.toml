@@ -19,7 +19,7 @@ classifiers = [
 
 dependencies = [
     "matplotlib>=3.9.4",
-    "numpy<2",
+    "numpy<3",
     "opencv-python>=4.11.0.86",
     "polyscope>=2.5.0",
     "rtree>=1.4.1",
