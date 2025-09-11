@@ -103,7 +103,7 @@ def uv_mask(
     # Rasterize triangles
     for face in faces_unwrapped:
         pts = uv_pixels[face].astype(np.int32).reshape((-1, 1, 2))
-        cv2.fillConvexPoly(hi_mask, pts, 255)
+        cv2.fillConvexPoly(hi_mask, pts, 255)  # type: ignore[call-overload]
 
     # Downsample back to target resolution with area interpolation
     mask = cv2.resize(hi_mask, (texture_width, texture_height), interpolation=cv2.INTER_AREA)
