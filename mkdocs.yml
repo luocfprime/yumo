@@ -9,6 +9,7 @@ copyright: Maintained by <a href="https://github.com/luocfprime">luocfprime</a>.
 nav:
   - Home: index.md
   - Modules: modules.md
+
 plugins:
   - search
   - mkdocstrings:
@@ -17,6 +18,16 @@ plugins:
           paths: [
             "yumo"
             ]
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: zh
+          name: Chinese
+          build: true
 theme:
   name: material
   feature:
@@ -43,6 +54,13 @@ extra:
   social:
     - icon: fontawesome/brands/git-alt
       link: https://github.com/luocfprime/yumo
+  alternate:
+    - name: English
+      link: en/
+      lang: en
+    - name: Chinese
+      link: zh/
+      lang: zh
 
 markdown_extensions:
   - toc:
