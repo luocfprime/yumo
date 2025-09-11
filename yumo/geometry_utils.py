@@ -1,5 +1,6 @@
 import logging
 
+import cv2
 import numpy as np
 import xatlas
 from scipy.interpolate import griddata
@@ -58,6 +59,27 @@ def unwrap_uv(
     texture_height, texture_width = atlas.height, atlas.width
 
     return param_corner, texture_height, texture_width, vmapping, faces_unwrapped, uvs, vertices_unwrapped
+
+
+def uv_binary_mask(uvs: np.ndarray, faces_unwrapped: np.ndarray, texture_width: int, texture_height: int) -> np.ndarray:
+    """
+    Creates a binary mask indicating which parts of the texture atlas
+    are occupied by the mesh (1) and which are empty (0).
+    """
+    # Convert UVs from [0,1] to pixel coordinates
+    uv_pixels = np.zeros_like(uvs)
+    uv_pixels[:, 0] = uvs[:, 0] * (texture_width - 1)
+    uv_pixels[:, 1] = (1.0 - uvs[:, 1]) * (texture_height - 1)  # flip Y
+
+    # Initialize mask
+    mask = np.zeros((texture_height, texture_width), dtype=np.uint8)
+
+    # Rasterize triangles
+    for face in faces_unwrapped:
+        pts = uv_pixels[face].astype(np.int32).reshape((-1, 1, 2))
+        cv2.fillConvexPoly(mask, pts, 1)
+
+    return mask.astype(bool)
 
 
 def triangle_areas(tri_vertices: np.ndarray) -> np.ndarray:
