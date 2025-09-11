@@ -55,6 +55,8 @@ class MeshStructure(Structure):
         self._need_update = False
         self._need_update = False
         self._display_mode = "preview"  # one of "preview", "baked"
+
+        self._enable_denoise = True
         self._denoise_method = "linear"  # one of DENOISE_METHODS
 
     @property
@@ -111,7 +113,12 @@ class MeshStructure(Structure):
         self.raw_texture = self.bake_texture(
             sampler_func=functools.partial(query_scalar_field, data_points=self.app_context.points),
         )
-        tex = denoise_texture(self.raw_texture, method=self._denoise_method)  # denoise
+
+        if self._enable_denoise:
+            tex = denoise_texture(self.raw_texture, method=self._denoise_method)
+        else:
+            tex = self.raw_texture.copy()
+
         tex[self.uv_mask == 0] = 0  # mask out unsampled areas
         self.prepared_quantities[self.QUANTITY_NAME] = tex
 
@@ -222,15 +229,20 @@ class MeshStructure(Structure):
                     self._display_mode = "preview"
                     self._need_update = True
 
+                psim.SameLine()
+
+                changed, denoise_enabled = psim.Checkbox("Enable Denoise", self._enable_denoise)
+                if changed:
+                    self._enable_denoise = denoise_enabled
+                    self._need_update = self._display_mode == "baked"
+
                 with ui_combo("Denoise Method", self._denoise_method) as expanded:
                     if expanded:
                         for method in DENOISE_METHODS:
                             selected, _ = psim.Selectable(method, method == self._denoise_method)
                             if selected and method != self._denoise_method:
                                 self._denoise_method = method
-                                self._need_update = (
-                                    self._display_mode == "baked"
-                                )  # needs re-bake if denoise method changed
+                                self._need_update = self._display_mode == "baked"
 
                 psim.SameLine()
 
