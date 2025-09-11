@@ -1,5 +1,8 @@
 import logging
 import re
+import time
+from contextlib import ContextDecorator
+from functools import wraps
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -9,6 +12,30 @@ from scipy.spatial import KDTree
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
+
+
+class profiler(ContextDecorator):
+    def __init__(self, name=None, profiler_logger=None):
+        self.name = name
+        self.profiler_logger = profiler_logger or logger
+
+    def __enter__(self):
+        self._start = time.perf_counter()
+        return self
+
+    def __exit__(self, *exc):
+        elapsed = time.perf_counter() - self._start
+        self.profiler_logger.debug(f"{self.name} took {elapsed:.6f} seconds")
+
+    def __call__(self, func):
+        prof_name = self.name or func.__name__
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with profiler(prof_name):
+                return func(*args, **kwargs)
+
+        return wrapper
 
 
 def parse_plt_file(file_path: str | Path, skip_zeros: bool = True) -> np.ndarray:
