@@ -96,7 +96,7 @@ def generate_colorbar_image(
     try:
         font = ImageFont.truetype("dejavusans.ttf", 12)
     except OSError:
-        font = ImageFont.load_default()
+        font = ImageFont.load_default()  # type: ignore[assignment]
 
     bar_width = 25
     bar_x_pos = (w - bar_width) // 6
@@ -179,7 +179,7 @@ def estimate_densest_point_distance(points: np.ndarray, k: int = 1000, quantile:
     distances, _ = kdtree.query(sampled_points, k=2)
 
     # Take the second column (nearest non-self neighbor)
-    nearest_distances = distances[:, 1]
+    nearest_distances = distances[:, 1]  # type: ignore[index]
 
     # Apply outlier filtering using the quantile parameter
     if len(nearest_distances) > 1:

@@ -102,7 +102,7 @@ class PolyscopeApp:
 
             if self.config.mesh_path:  # the mesh should be loaded if the path is provided
                 psim.Text(
-                    f"Mesh vertices: {len(self.context.mesh_vertices):,}, faces: {len(self.context.mesh_faces):,}"
+                    f"Mesh vertices: {len(self.context.mesh_vertices):,}, faces: {len(self.context.mesh_faces):,}"  # type: ignore[arg-type]
                 )
 
             psim.Text(f"Points: {self.context.points.shape[0]:,}")

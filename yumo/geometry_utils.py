@@ -103,7 +103,7 @@ def uv_mask(
     # Rasterize triangles
     for face in faces_unwrapped:
         pts = uv_pixels[face].astype(np.int32).reshape((-1, 1, 2))
-        cv2.fillConvexPoly(hi_mask, pts, 255)
+        cv2.fillConvexPoly(hi_mask, pts, 255)  # type: ignore[call-overload]
 
     # Downsample back to target resolution with area interpolation
     mask = cv2.resize(hi_mask, (texture_width, texture_height), interpolation=cv2.INTER_AREA)
@@ -126,7 +126,7 @@ def triangle_areas(tri_vertices: np.ndarray) -> np.ndarray:
     v0 = tri_vertices[:, 1] - tri_vertices[:, 0]
     v1 = tri_vertices[:, 2] - tri_vertices[:, 0]
     areas = 0.5 * np.linalg.norm(np.cross(v0, v1), axis=1)
-    return areas
+    return areas  # type: ignore[no-any-return]
 
 
 def sample_surface(
@@ -214,7 +214,7 @@ def map_to_uv(
 
     # Weighted sum -> (L,2)
     sample_uvs = np.einsum("lj,ljk->lk", barycentric_coord, sampled_tris)
-    return sample_uvs
+    return sample_uvs  # type: ignore[no-any-return]
 
 
 @profiler(profiler_logger=logger)
@@ -234,7 +234,7 @@ def query_scalar_field(points_coord: np.ndarray, data_points: np.ndarray) -> np.
         points_coord, k=1
     )  # TODO: check if one should consider the pruned zero-value points. For example, if the nearest point is zero-value (and pruned), this func may look for the next non-zero nearest value, which is not intended.
     interpolated_values = data_points[nearest_indices, 3]
-    return interpolated_values
+    return interpolated_values  # type: ignore[no-any-return]
 
 
 def bake_to_texture(
@@ -281,13 +281,13 @@ def nearest_fill(texture, max_dist=16, **kwargs):  # kwargs for compatibility
 
 def nearest_and_blur(
     texture, blur_sigma=1.0, max_dist=16, **kwargs
-):  # max dist should be smaller than the padding in unwrap_uv
+) -> np.ndarray:  # max dist should be smaller than the padding in unwrap_uv
     mask = texture > 0
     dist, idxs = distance_transform_edt(~mask, return_indices=True)
     nearest = texture[tuple(idxs)]
     nearest[dist > max_dist] = 0  # drop far-away fills
 
-    smoothed = gaussian_filter(nearest, sigma=blur_sigma)
+    smoothed: np.ndarray = gaussian_filter(nearest, sigma=blur_sigma)
     return smoothed
 
 

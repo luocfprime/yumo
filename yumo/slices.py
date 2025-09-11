@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class Slice(Structure):
     QUANTITY_NAME: ClassVar[str] = "slice"
 
-    def __init__(self, name: str, app_context: "Context", group: ps.Group, **kwargs):
+    def __init__(self, name: str, app_context: "Context", group: ps.Group, **kwargs):  # type: ignore[no-any-unimported]
         super().__init__(name, app_context, **kwargs)
 
         self.group = group
@@ -29,13 +29,13 @@ class Slice(Structure):
 
         diag = np.linalg.norm(bbox_max - bbox_min)
 
-        self.width = diag / 1.73
-        self.height = diag / 1.73
+        self.width: float = diag / 1.73  # type: ignore[assignment]
+        self.height: float = diag / 1.73  # type: ignore[assignment]
 
-        self.resolution_w = int(self.width)
-        self.resolution_h = int(self.height)
+        self.resolution_w: int = int(self.width)
+        self.resolution_h: int = int(self.height)
 
-        self.plane_transform = None
+        self.plane_transform: np.ndarray = None  # type: ignore[assignment]
 
         self._need_update_quant = False
         self._live = False
@@ -49,7 +49,7 @@ class Slice(Structure):
     def _do_register(self):
         """Register the slice mesh"""
         logger.debug(f"Registering slice mesh: '{self.name}'")
-        self._vertices, self.faces = generate_slice_mesh(
+        self._vertices, self.faces = generate_slice_mesh(  # type: ignore[assignment]
             center=np.zeros(3),
             h=self.height,
             w=self.width,
@@ -79,7 +79,8 @@ class Slice(Structure):
     def callback(self):
         current_transform = self.polyscope_structure.get_transform()
         if (self._live or self._need_update_quant) and not np.allclose(
-            current_transform, self.plane_transform
+            current_transform,
+            self.plane_transform,
         ):  # plane moved and should refresh
             self.plane_transform = current_transform
             self._need_update_quant = True
@@ -93,10 +94,10 @@ class Slice(Structure):
     def vertices_transformed(self):
         # Transform vertices
         local_verts = self._vertices  # shape: (N, 3)
-        n_verts = local_verts.shape[0]
+        n_verts = local_verts.shape[0]  # type: ignore[attr-defined]
 
         # Convert to homogeneous coordinates: (N, 4)
-        homogeneous_verts = np.hstack([local_verts, np.ones((n_verts, 1))])
+        homogeneous_verts = np.hstack([local_verts, np.ones((n_verts, 1))])  # type: ignore[list-item]
 
         # Apply transform (assuming 4x4 matrix)
         transformed_homogeneous = (self.plane_transform @ homogeneous_verts.T).T
@@ -189,7 +190,7 @@ class Slices:
         self.enabled = enabled
 
         self.group = None
-        self.slices = {}
+        self.slices = {}  # type: ignore[var-annotated]
 
     def add_slice(self):
         name = None

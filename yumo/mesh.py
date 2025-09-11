@@ -46,9 +46,10 @@ class MeshStructure(Structure):
         self.uvs = None
         self.vertices_unwrapped = None
 
-        self.uv_mask = None  # mask indicating which parts of the texture atlas are occupied by the mesh (1) and which are empty (0).
+        # mask indicating which parts of the texture atlas are occupied by the mesh (1) and which are empty (0).
+        self.uv_mask: np.ndarray = None  # type: ignore[assignment]
 
-        self.raw_texture = None
+        self.raw_texture: np.ndarray = None  # type: ignore[assignment]
 
         self.mesh_surface_area = triangle_areas(self.vertices[self.faces]).sum()
 
@@ -58,7 +59,7 @@ class MeshStructure(Structure):
 
         self._enable_denoise = True
         self._denoise_method = DENOISE_METHODS[0]  # one of DENOISE_METHODS
-        self._denoise_kwargs = {}
+        self._denoise_kwargs = {}  # type: ignore[var-annotated]
 
     @property
     def polyscope_structure(self):
@@ -86,17 +87,19 @@ class MeshStructure(Structure):
         """
         # -- 1. Sample surface --
         points, bary, indices = sample_surface(
-            self.vertices_unwrapped, self.faces_unwrapped, points_per_area=self.points_per_area
+            self.vertices_unwrapped,  # type: ignore[arg-type]
+            self.faces_unwrapped,  # type: ignore[arg-type]
+            points_per_area=self.points_per_area,
         )
 
         # -- 2. Map samples to UV space --
-        sample_uvs = map_to_uv(self.uvs, self.faces_unwrapped, bary, indices)
+        sample_uvs = map_to_uv(self.uvs, self.faces_unwrapped, bary, indices)  # type: ignore[arg-type]
 
         # -- 3. Sample scalar field --
         values = sampler_func(points)
 
         # -- 4. Bake to texture --
-        tex = bake_to_texture(sample_uvs, values, self.texture_height, self.texture_width)
+        tex = bake_to_texture(sample_uvs, values, self.texture_height, self.texture_width)  # type: ignore[arg-type]
 
         return tex
 
@@ -173,13 +176,13 @@ class MeshStructure(Structure):
             self.faces_unwrapped,
             self.uvs,
             self.vertices_unwrapped,
-        ) = unwrap_uv(self.vertices, self.faces)
+        ) = unwrap_uv(self.vertices, self.faces)  # type: ignore[assignment]
 
         self.uv_mask = uv_mask(
-            uvs=self.uvs,
-            faces_unwrapped=self.faces_unwrapped,
-            texture_width=self.texture_width,
-            texture_height=self.texture_height,
+            uvs=self.uvs,  # type: ignore[arg-type]
+            faces_unwrapped=self.faces_unwrapped,  # type: ignore[arg-type]
+            texture_width=self.texture_width,  # type: ignore[arg-type]
+            texture_height=self.texture_height,  # type: ignore[arg-type]
         )
 
         mesh.add_parameterization_quantity("uv", self.param_corner, defined_on="corners", enabled=True)
