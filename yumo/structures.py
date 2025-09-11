@@ -118,6 +118,10 @@ class PointCloudStructure(Structure):
         super().__init__(name, app_context, **kwargs)
         self.points = points
 
+        # 10% of the densest point distance
+        self._points_radius = 0.1 * self.app_context.points_densest_distance
+        self._points_render_mode = "sphere"  # one of "sphere" or "quad", the latter is less costly
+
     @property
     def polyscope_structure(self):
         return ps.get_point_cloud(self.name)
@@ -134,8 +138,8 @@ class PointCloudStructure(Structure):
         """Register only the point cloud geometry (XYZ coordinates)."""
         logger.debug(f"Registering point cloud geometry: '{self.name}'")
         p = ps.register_point_cloud(self.name, self.points[:, :3])
-        p.set_radius(self.app_context.points_radius, relative=False)
-        p.set_point_render_mode(self.app_context.points_render_mode)
+        p.set_radius(self._points_radius, relative=False)
+        p.set_point_render_mode(self._points_render_mode)
 
     def set_point_render_mode(self, mode: str):
         if self.polyscope_structure:
@@ -160,23 +164,23 @@ class PointCloudStructure(Structure):
 
                 changed, radius = psim.SliderFloat(
                     "Radius",
-                    self.app_context.points_radius,
+                    self._points_radius,
                     v_min=self.app_context.points_densest_distance * 0.01,
                     v_max=self.app_context.points_densest_distance * 0.20,
                     format="%.4g",
                 )
                 if changed:
-                    self.app_context.points_radius = radius
+                    self._points_radius = radius
                     self.set_radius(radius)
 
                 psim.SameLine()
 
-                with ui_combo("Render Mode", self.app_context.points_render_mode) as expanded:
+                with ui_combo("Render Mode", self._points_render_mode) as expanded:
                     if expanded:
                         for mode in ["sphere", "quad"]:
-                            selected, _ = psim.Selectable(mode, mode == self.app_context.points_render_mode)
-                            if selected and mode != self.app_context.points_render_mode:
-                                self.app_context.points_render_mode = mode
+                            selected, _ = psim.Selectable(mode, mode == self._points_render_mode)
+                            if selected and mode != self._points_render_mode:
+                                self._points_render_mode = mode
                                 self.set_point_render_mode(mode)
 
             psim.Separator()

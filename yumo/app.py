@@ -35,10 +35,10 @@ class PolyscopeApp:
         self.structures: dict[str, Structure] = {}
         self._should_init_quantities = True
 
-        self.load_and_prepare_data()
+        self.prepare_data_and_init_structures()
 
-    def load_and_prepare_data(self):
-        """Load data from files, create structures, and prepare their quantities."""
+    def prepare_data_and_init_structures(self):
+        """Load data from files, create structures."""
         # 1. Load raw data
         logger.info(f"Loading data from {self.config.data_path}")
         points = parse_plt_file(self.config.data_path, skip_zeros=self.config.skip_zeros)
@@ -63,9 +63,6 @@ class PolyscopeApp:
             quantile=0.01,
         )
 
-        # set the display radius to be 10% of the densest distance
-        self.context.points_radius = 0.1 * self.context.points_densest_distance
-
         if self.config.mesh_path:
             logger.info(f"Loading mesh from {self.config.mesh_path}")
             self.context.mesh_vertices, self.context.mesh_faces = pp3d.read_polygon_mesh(str(self.config.mesh_path))
@@ -78,6 +75,7 @@ class PolyscopeApp:
 
         # 3. Instantiate structures
         self.structures["points"] = PointCloudStructure("points", self.context, self.context.points, enabled=True)
+
         if self.context.mesh_vertices is not None and self.context.mesh_faces is not None:
             self.structures["mesh"] = MeshStructure(
                 "mesh", self.context, self.context.mesh_vertices, self.context.mesh_faces, enabled=True

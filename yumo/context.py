@@ -27,5 +27,3 @@ class Context:
     cmap: str = CMAPS[0]
     color_min: float = None
     color_max: float = None
-    points_radius: float = 0.005
-    points_render_mode: str = "sphere"  # one of "sphere" or "quad", the latter is less costly
