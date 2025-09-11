@@ -6,9 +6,9 @@ import numpy as np
 import polyscope as ps
 import polyscope.imgui as psim
 
+from yumo.base_structure import Structure
 from yumo.context import Context
 from yumo.geometry_utils import generate_slice_mesh, query_scalar_field
-from yumo.structures import Structure
 from yumo.ui import ui_item_width, ui_tree_node
 
 logger = logging.getLogger(__name__)

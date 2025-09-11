@@ -7,10 +7,12 @@ import polyscope as ps
 import polyscope.imgui as psim
 import potpourri3d as pp3d
 
+from yumo.base_structure import Structure
 from yumo.constants import CMAPS
 from yumo.context import Context
+from yumo.mesh import MeshStructure
+from yumo.point_cloud import PointCloudStructure
 from yumo.slices import Slices
-from yumo.structures import MeshStructure, PointCloudStructure, Structure
 from yumo.ui import ui_combo, ui_item_width, ui_tree_node
 from yumo.utils import estimate_densest_point_distance, generate_colorbar_image, parse_plt_file
 
