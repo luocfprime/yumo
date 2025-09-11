@@ -21,8 +21,8 @@ class PointCloudStructure(Structure):
         super().__init__(name, app_context, **kwargs)
         self.points = points
 
-        # initialize threshold at median of scalar values
-        self.visualize_threshold = np.median(points[:, 3])
+        # initialize threshold at top 10% of scalar values
+        self.visualize_threshold = float(np.percentile(points[:, 3], 90))
 
         # 10% of the densest point distance
         self._points_radius = 0.1 * self.app_context.points_densest_distance
