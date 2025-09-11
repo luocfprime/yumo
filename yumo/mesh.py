@@ -48,10 +48,12 @@ class MeshStructure(Structure):
 
         self.uv_mask = None  # mask indicating which parts of the texture atlas are occupied by the mesh (1) and which are empty (0).
 
+        self.raw_texture = None
+
         self.mesh_surface_area = triangle_areas(self.vertices[self.faces]).sum()
 
-        self._resolution_changed = False
-        self._should_bake = False
+        self._need_update = False
+        self._need_update = False
         self._display_mode = "preview"  # one of "preview", "baked"
         self._denoise_method = "linear"  # one of DENOISE_METHODS
 
@@ -68,19 +70,58 @@ class MeshStructure(Structure):
         """
         self.update_resolution_preview()
 
+    def bake_texture(
+        self,
+        sampler_func: Callable[[np.ndarray], np.ndarray],
+    ):
+        """
+        Args:
+            sampler_func: Takes in sample query points (N, 3), outputs values (N,)
+
+        Returns:
+
+        """
+        # -- 1. Sample surface --
+        points, bary, indices = sample_surface(
+            self.vertices_unwrapped, self.faces_unwrapped, points_per_area=self.points_per_area
+        )
+
+        # -- 2. Map samples to UV space --
+        sample_uvs = map_to_uv(self.uvs, self.faces_unwrapped, bary, indices)
+
+        # -- 3. Sample scalar field --
+        values = sampler_func(points)
+
+        # -- 4. Bake to texture --
+        tex = bake_to_texture(sample_uvs, values, self.texture_height, self.texture_width)
+
+        return tex
+
     def update_resolution_preview(self):
         """Add a preview quantity of the surface sampling resolution using bake_texture"""
-        self.prepared_quantities[self.QUANTITY_NAME] = self.bake_texture(
+        self.raw_texture = self.bake_texture(
             sampler_func=lambda p: np.ones(p.shape[0]) * self.app_context.color_max,  # 0 (no fill); color_max (filled)
-            denoise_func=lambda x: x,  # no denoise, as we want to visualize the resolution
         )
+        tex = self.raw_texture
+        tex[self.uv_mask == 0] = 0
+        self.prepared_quantities[self.QUANTITY_NAME] = tex
 
     def update_data_texture(self):
         """Sample the data points and update texture map"""
-        self.prepared_quantities[self.QUANTITY_NAME] = self.bake_texture(
+        self.raw_texture = self.bake_texture(
             sampler_func=functools.partial(query_scalar_field, data_points=self.app_context.points),
-            denoise_func=functools.partial(denoise_texture, method=self._denoise_method),
         )
+        tex = denoise_texture(self.raw_texture, method=self._denoise_method)  # denoise
+        tex[self.uv_mask == 0] = 0  # mask out unsampled areas
+        self.prepared_quantities[self.QUANTITY_NAME] = tex
+
+    def update_texture(self):
+        if self._display_mode == "baked":
+            self.update_data_texture()
+        elif self._display_mode == "preview":
+            self.update_resolution_preview()
+        else:
+            raise ValueError(f"Invalid display mode: {self._display_mode}")
 
     def add_prepared_quantities(self):
         """Adds all prepared scalar quantities to the registered Polyscope structure."""
@@ -168,7 +209,8 @@ class MeshStructure(Structure):
                 )
                 if changed:
                     self.points_per_area = resolution
-                    self._resolution_changed = True
+                    self._display_mode = "preview"
+                    self._need_update = True
 
                 with ui_combo("Denoise Method", self._denoise_method) as expanded:
                     if expanded:
@@ -176,64 +218,22 @@ class MeshStructure(Structure):
                             selected, _ = psim.Selectable(method, method == self._denoise_method)
                             if selected and method != self._denoise_method:
                                 self._denoise_method = method
-                                self._should_bake = (
+                                self._need_update = (
                                     self._display_mode == "baked"
                                 )  # needs re-bake if denoise method changed
 
                 psim.SameLine()
 
                 if psim.Button("Bake"):
-                    self._should_bake = True
+                    self._need_update = True
+                    self._display_mode = "baked"
 
             psim.Separator()
 
         self._ui_texture_map_display()
 
-    def bake_texture(
-        self,
-        sampler_func: Callable[[np.ndarray], np.ndarray],
-        denoise_func: Callable[[np.ndarray], np.ndarray],
-    ):
-        """
-
-        Args:
-            sampler_func: Takes in sample query points (N, 3), outputs values (N,)
-            denoise_func: Smooth the texture result
-
-        Returns:
-
-        """
-        # -- 1. Sample surface --
-        points, bary, indices = sample_surface(
-            self.vertices_unwrapped, self.faces_unwrapped, points_per_area=self.points_per_area
-        )
-
-        # -- 2. Map samples to UV space --
-        sample_uvs = map_to_uv(self.uvs, self.faces_unwrapped, bary, indices)
-
-        # -- 3. Sample scalar field --
-        values = sampler_func(points)
-
-        # -- 4. Bake to texture --
-        tex = bake_to_texture(sample_uvs, values, self.texture_height, self.texture_width)
-
-        # -- 5. Denoise --
-        tex = denoise_func(tex)
-
-        # -- 6. Apply uv_mask --
-        tex[self.uv_mask == 0] = 0
-
-        return tex
-
     def callback(self):
-        if self._resolution_changed:
-            self._resolution_changed = False
-            self._display_mode = "preview"  # set preview resolution change before baking
-            self.update_resolution_preview()  # update texture
+        if self._need_update:
+            self._need_update = False
+            self.update_texture()  # update texture
             self.add_prepared_quantities()  # update polyscope quantity
-
-        if self._should_bake:
-            self._should_bake = False
-            self._display_mode = "baked"
-            self.update_data_texture()
-            self.add_prepared_quantities()
