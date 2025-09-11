@@ -53,7 +53,7 @@ class MeshStructure(Structure):
         self.mesh_surface_area = triangle_areas(self.vertices[self.faces]).sum()
 
         self._need_update = False
-        self._need_update = False
+        self._need_rebake = True
         self._display_mode = "preview"  # one of "preview", "baked"
 
         self._enable_denoise = True
@@ -111,9 +111,12 @@ class MeshStructure(Structure):
 
     def update_data_texture(self):
         """Sample the data points and update texture map"""
-        self.raw_texture = self.bake_texture(
-            sampler_func=functools.partial(query_scalar_field, data_points=self.app_context.points),
-        )
+        if self._need_rebake:
+            logger.debug(f"Rebaking data texture for structure: '{self.name}'")
+            self._need_rebake = False
+            self.raw_texture = self.bake_texture(
+                sampler_func=functools.partial(query_scalar_field, data_points=self.app_context.points),
+            )
 
         if self._enable_denoise:
             tex = denoise_texture(self.raw_texture, method=self._denoise_method, **self._denoise_kwargs)
@@ -211,21 +214,29 @@ class MeshStructure(Structure):
             self._enable_denoise = denoise_enabled
             self._need_update = self._display_mode == "baked"
 
-        psim.SameLine()
+        if self._enable_denoise:
+            psim.SameLine()
 
-        with ui_combo("Denoise Method", self._denoise_method) as expanded:
-            if expanded:
-                for method in DENOISE_METHODS:
-                    selected, _ = psim.Selectable(method, method == self._denoise_method)
-                    if selected and method != self._denoise_method:
-                        self._denoise_method = method
-                        self._need_update = self._display_mode == "baked"
+            with ui_combo("Denoise Method", self._denoise_method) as expanded:
+                if expanded:
+                    for method in DENOISE_METHODS:
+                        selected, _ = psim.Selectable(method, method == self._denoise_method)
+                        if selected and method != self._denoise_method:
+                            self._denoise_method = method
+                            self._need_update = self._display_mode == "baked"
 
-        if self._denoise_method in ["nearest_and_gaussian", "gaussian"]:
-            changed, sigma = psim.DragFloat("Sigma", self._denoise_kwargs.get("sigma", 1.0), v_min=0.0, v_max=16.0)
+            changed, max_dist = psim.DragFloat(
+                "Max Dist for Nearest Neighbour", self._denoise_kwargs.get("max_dist", 16), v_min=1, v_max=16
+            )
             if changed:
-                self._denoise_kwargs["sigma"] = sigma
+                self._denoise_kwargs["max_dist"] = max_dist
                 self._need_update = self._display_mode == "baked"
+
+            if self._denoise_method in ["nearest_and_gaussian", "gaussian"]:
+                changed, sigma = psim.DragFloat("Sigma", self._denoise_kwargs.get("sigma", 1.0), v_min=0.0, v_max=16.0)
+                if changed:
+                    self._denoise_kwargs["sigma"] = sigma
+                    self._need_update = self._display_mode == "baked"
 
     def ui(self):
         """Mesh related UI"""
@@ -257,6 +268,7 @@ class MeshStructure(Structure):
 
                 if psim.Button("Bake"):
                     self._need_update = True
+                    self._need_rebake = True
                     self._display_mode = "baked"
 
                 self._ui_texture_denoise_method()
