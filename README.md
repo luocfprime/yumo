@@ -7,34 +7,44 @@ Scalar field visualization using Polyscope.
 
 - **Documentation** <https://luocfprime.github.io/yumo/>
 
+## Install
 
-## Getting started with your project
+Prerequisites: You must have at least one Python package manager installed (e.g. [uv](https://docs.astral.sh/uv/getting-started/installation/)).
 
-### 1. Set Up Your Development Environment
-
-Install the environment and the pre-commit hooks with
-
-```bash
-make install
-```
-
-This will also generate your `uv.lock` file
-
-### 2. Commit the changes
-
-Commit changes to your repository with
+Install it from PyPI:
 
 ```bash
-git add .
-git commit -m 'Fix formatting issues'
-git push origin main
+uv tool install yumo
 ```
 
-You are now ready to start development on your project!
+Or, if you want to run it once without installing it, you can use the `uv run` command:
 
-For activating the automatic documentation with MkDocs, see [here](https://matrig.github.io/minicookiecutter/features/mkdocs/#enabling-the-documentation-on-github).
+```bash
+uv run --with yumo yumo xxx  # xxx being the subcommand you want to run
+```
 
+## Usage
 
----
+```text
+$ yumo -h
 
-Repository initiated with [matrig/minicookiecutter](https://github.com/matrig/minicookiecutter).
+ Usage: yumo [OPTIONS] COMMAND [ARGS]...
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --install-completion            Install completion for the current shell.                                                                       │
+│ --show-completion               Show completion for the current shell, to copy it or customize the installation.                                │
+│ --help                -h        Show this message and exit.                                                                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ prune   Prune data points that are inside the mesh.                                                                                             │
+│ viz     Visualize the scalar field                                                                                                              │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## License
+
+MIT.
