@@ -4,10 +4,11 @@ import numpy as np
 import pytest
 from PIL import Image, ImageChops
 
+from yumo.constants import DENOISE_METHODS
 from yumo.geometry_utils import denoise_texture
 
 
-@pytest.mark.parametrize("method", ["linear", "nearest"])
+@pytest.mark.parametrize("method", DENOISE_METHODS)
 def test_denoise_texture(test_data, tmp_path, method):
     """
     End-to-end test of sparse texture denoising.

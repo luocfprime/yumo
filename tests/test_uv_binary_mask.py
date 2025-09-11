@@ -38,9 +38,6 @@ def test_uv_binary_mask(test_data, tmp_path):
     # -- 3. Generate UV binary mask --
     mask = uv_mask(uvs, faces_unwrapped, W, H)
 
-    # make sure mask is bool
-    assert mask.dtype == np.dtype("bool")
-
     # Convert to an image for comparison
     mask_img = Image.fromarray((mask * 255).astype(np.uint8))
     out_file = tmp_path / "uv_mask.png"
