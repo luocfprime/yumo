@@ -7,6 +7,8 @@ from scipy.interpolate import griddata
 from scipy.ndimage import distance_transform_edt
 from scipy.spatial import KDTree
 
+from yumo.utils import profiler
+
 logger = logging.getLogger(__name__)
 
 
@@ -178,6 +180,7 @@ def map_to_uv(
     return sample_uvs
 
 
+@profiler(profiler_logger=logger)
 def query_scalar_field(points_coord: np.ndarray, data_points: np.ndarray) -> np.ndarray:
     """
     Query scalar field f(x,y,z) in vectorized form.
@@ -249,6 +252,7 @@ def linear_fill(texture):
     return filled
 
 
+@profiler(profiler_logger=logger)
 def denoise_texture(texture, method="linear"):
     """
     Fill missing (zero) values in a sparse 2D texture map using interpolation.
