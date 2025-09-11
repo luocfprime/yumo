@@ -18,6 +18,7 @@ from yumo.geometry_utils import (
     sample_surface,
     triangle_areas,
     unwrap_uv,
+    uv_binary_mask,
 )
 from yumo.ui import ui_combo, ui_item_width, ui_tree_node
 
@@ -44,6 +45,8 @@ class MeshStructure(Structure):
         self.faces_unwrapped = None
         self.uvs = None
         self.vertices_unwrapped = None
+
+        self.uv_mask = None  # mask indicating which parts of the texture atlas are occupied by the mesh (1) and which are empty (0).
 
         self.mesh_surface_area = triangle_areas(self.vertices[self.faces]).sum()
 
@@ -120,7 +123,27 @@ class MeshStructure(Structure):
             self.vertices_unwrapped,
         ) = unwrap_uv(self.vertices, self.faces)
 
+        self.uv_mask = uv_binary_mask(
+            uvs=self.uvs,
+            faces_unwrapped=self.faces_unwrapped,
+            texture_width=self.texture_width,
+            texture_height=self.texture_height,
+        )
+
         mesh.add_parameterization_quantity("uv", self.param_corner, defined_on="corners", enabled=True)
+
+    def _ui_texture_map_display(self):
+        """Add texture map image"""
+        tex = self.prepared_quantities[self.QUANTITY_NAME]
+        ps.add_scalar_image_quantity(
+            "texture_map",
+            tex,
+            vminmax=(self.app_context.color_min, self.app_context.color_max),
+            cmap=self.app_context.cmap,
+            image_origin="upper_left",
+            show_in_imgui_window=True,
+            enabled=True,
+        )
 
     def ui(self):
         """Mesh related UI"""
@@ -164,6 +187,8 @@ class MeshStructure(Structure):
 
             psim.Separator()
 
+        self._ui_texture_map_display()
+
     def bake_texture(
         self,
         sampler_func: Callable[[np.ndarray], np.ndarray],
@@ -194,6 +219,9 @@ class MeshStructure(Structure):
 
         # -- 5. Denoise --
         tex = denoise_func(tex)
+
+        # -- 6. Apply uv_mask --
+        tex[self.uv_mask == 0] = 0
 
         return tex
 
