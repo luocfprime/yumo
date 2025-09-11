@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image, ImageChops
 
 from yumo.geometry_utils import unwrap_uv, uv_mask
+from yumo.utils import load_mesh
 
 
 def test_uv_binary_mask(test_data, tmp_path):
@@ -20,9 +21,8 @@ def test_uv_binary_mask(test_data, tmp_path):
 
     # -- 1. Load mesh (vertices, faces) --
     mesh_path = os.path.join(test_data, "sample.STL")
-    import potpourri3d as pp3d
 
-    vertices, faces = pp3d.read_polygon_mesh(mesh_path)
+    vertices, faces = load_mesh(mesh_path)
 
     # -- 2. Unwrap UVs --
     (

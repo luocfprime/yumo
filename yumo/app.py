@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 import polyscope as ps
 import polyscope.imgui as psim
-import potpourri3d as pp3d
 
 from yumo.base_structure import Structure
 from yumo.constants import CMAPS
@@ -14,7 +13,7 @@ from yumo.mesh import MeshStructure
 from yumo.point_cloud import PointCloudStructure
 from yumo.slices import Slices
 from yumo.ui import ui_combo, ui_item_width, ui_tree_node
-from yumo.utils import estimate_densest_point_distance, generate_colorbar_image, parse_plt_file
+from yumo.utils import estimate_densest_point_distance, generate_colorbar_image, load_mesh, parse_plt_file
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +66,7 @@ class PolyscopeApp:
 
         if self.config.mesh_path:
             logger.info(f"Loading mesh from {self.config.mesh_path}")
-            self.context.mesh_vertices, self.context.mesh_faces = pp3d.read_polygon_mesh(str(self.config.mesh_path))
+            self.context.mesh_vertices, self.context.mesh_faces = load_mesh(str(self.config.mesh_path))  # type: ignore[misc]
 
         # 2. Calculate statistics and set initial context
         self.context.min_value = np.min(points[:, 3])

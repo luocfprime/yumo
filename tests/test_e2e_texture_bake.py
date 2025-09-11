@@ -1,10 +1,10 @@
 import os
 
 import numpy as np
-import potpourri3d as pp3d
 from PIL import Image, ImageChops
 
 from yumo.geometry_utils import bake_to_texture, map_to_uv, sample_surface, unwrap_uv
+from yumo.utils import load_mesh
 
 
 def test_e2e_texture_bake(test_data, tmp_path):
@@ -22,7 +22,7 @@ def test_e2e_texture_bake(test_data, tmp_path):
     """
     # -- 1. Load mesh from STL file --
     mesh_path = os.path.join(test_data, "sample.STL")
-    vertices, faces = pp3d.read_polygon_mesh(mesh_path)
+    vertices, faces = load_mesh(mesh_path)
 
     # -- 2. Unwrap to UVs --
     (

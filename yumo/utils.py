@@ -7,6 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import trimesh
 from PIL import Image, ImageDraw, ImageFont
 from scipy.spatial import KDTree
 from tqdm import tqdm
@@ -36,6 +37,13 @@ class profiler(ContextDecorator):
                 return func(*args, **kwargs)
 
         return wrapper
+
+
+def load_mesh(file_path: str | Path, return_trimesh: bool = False) -> trimesh.Trimesh | tuple[np.ndarray, np.ndarray]:
+    mesh = trimesh.load_mesh(file_path)
+    if return_trimesh:
+        return mesh
+    return mesh.vertices, mesh.faces
 
 
 def parse_plt_file(file_path: str | Path, skip_zeros: bool = True) -> np.ndarray:

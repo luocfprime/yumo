@@ -36,7 +36,13 @@ def configure_logging(log_level: str):
 
 
 @app.command()
-def _(
+def prune():
+    """Prune data points that is inside the mesh."""
+    ...
+
+
+@app.command()
+def viz(
     data_path: Path = typer.Option(
         ...,
         "--data",
@@ -73,6 +79,7 @@ def _(
         help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
     ),
 ) -> None:
+    """Visualize the scalar field"""
     # Configure logging based on the provided log_level
     configure_logging(log_level)
 
