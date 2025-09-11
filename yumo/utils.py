@@ -39,7 +39,7 @@ class profiler(ContextDecorator):
         return wrapper
 
 
-def load_mesh(file_path: str | Path, return_trimesh: bool = False) -> trimesh.Trimesh | tuple[np.ndarray, np.ndarray]:
+def load_mesh(file_path: str | Path, return_trimesh: bool = False) -> trimesh.Trimesh | tuple[np.ndarray, np.ndarray]:  # type: ignore[no-any-unimported]
     mesh = trimesh.load_mesh(file_path)
     if return_trimesh:
         return mesh
@@ -198,7 +198,7 @@ def estimate_densest_point_distance(points: np.ndarray, k: int = 1000, quantile:
     distances, _ = kdtree.query(sampled_points, k=2)
 
     # Take the second column (nearest non-self neighbor)
-    nearest_distances = distances[:, 1]  # type: ignore[index]
+    nearest_distances = distances[:, 1]
 
     # Apply outlier filtering using the quantile parameter
     if len(nearest_distances) > 1:
