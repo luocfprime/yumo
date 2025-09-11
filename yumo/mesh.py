@@ -186,6 +186,16 @@ class MeshStructure(Structure):
             enabled=True,
         )
 
+        ps.add_scalar_image_quantity(
+            "raw_texture",
+            self.raw_texture,
+            vminmax=(self.app_context.color_min, self.app_context.color_max),
+            cmap=self.app_context.cmap,
+            image_origin="upper_left",
+            show_in_imgui_window=True,
+            enabled=True,
+        )
+
     def ui(self):
         """Mesh related UI"""
         with ui_tree_node("Mesh", open_first_time=True) as expanded:
