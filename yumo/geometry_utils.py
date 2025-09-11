@@ -60,6 +60,14 @@ def unwrap_uv(
     return param_corner, texture_height, texture_width, vmapping, faces_unwrapped, uvs, vertices_unwrapped
 
 
+def triangle_areas(tri_vertices: np.ndarray) -> np.ndarray:
+    # Triangle areas (M,)
+    v0 = tri_vertices[:, 1] - tri_vertices[:, 0]
+    v1 = tri_vertices[:, 2] - tri_vertices[:, 0]
+    areas = 0.5 * np.linalg.norm(np.cross(v0, v1), axis=1)
+    return areas
+
+
 def sample_surface(
     vertices: np.ndarray,
     faces: np.ndarray,
@@ -87,10 +95,7 @@ def sample_surface(
     # Triangle vertices (M,3,3)
     tri_vertices = vertices[faces]
 
-    # Triangle areas (M,)
-    v0 = tri_vertices[:, 1] - tri_vertices[:, 0]
-    v1 = tri_vertices[:, 2] - tri_vertices[:, 0]
-    areas = 0.5 * np.linalg.norm(np.cross(v0, v1), axis=1)
+    areas = triangle_areas(tri_vertices)
 
     # Number of samples per face
     n_samples_per_face = np.ceil(areas * points_per_area).astype(int)

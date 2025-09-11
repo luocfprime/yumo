@@ -78,7 +78,7 @@ class PolyscopeApp:
 
         # 3. Instantiate structures
         self.structures["points"] = PointCloudStructure("points", self.context, self.context.points, enabled=True)
-        if self.context.mesh_vertices is not None:
+        if self.context.mesh_vertices is not None and self.context.mesh_faces is not None:
             self.structures["mesh"] = MeshStructure(
                 "mesh", self.context, self.context.mesh_vertices, self.context.mesh_faces, enabled=True
             )
