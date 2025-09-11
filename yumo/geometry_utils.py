@@ -206,23 +206,16 @@ def bake_to_texture(
     """
     Bake scalar values into a texture map using scatter-add.
 
-    Args:
-        sample_uvs (np.ndarray): (L, 2) in [0,1].
-        values (np.ndarray): (L,).
-        H (int): texture height.
-        W (int): texture width.
-
-    Returns:
-        texture (np.ndarray): (H, W).
+    UV space (0,0 bottom-left) is converted to image space (0,0 top-left).
     """
     tex_sum = np.zeros((H, W), dtype=float)
     tex_count = np.zeros((H, W), dtype=int)
 
-    # UV -> pixel (L,)
+    # UV -> pixel coords (with vertical flip to align with image convention)
     us = np.clip((sample_uvs[:, 0] * (W - 1)).astype(int), 0, W - 1)
-    vs = np.clip((sample_uvs[:, 1] * (H - 1)).astype(int), 0, H - 1)
+    vs = np.clip(((1.0 - sample_uvs[:, 1]) * (H - 1)).astype(int), 0, H - 1)
 
-    # Scatter-add
+    # Scatter values
     np.add.at(tex_sum, (vs, us), values)
     np.add.at(tex_count, (vs, us), 1)
 
