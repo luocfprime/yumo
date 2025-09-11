@@ -16,6 +16,7 @@ from yumo.geometry_utils import (
     map_to_uv,
     query_scalar_field,
     sample_surface,
+    triangle_areas,
     unwrap_uv,
 )
 from yumo.ui import ui_combo, ui_item_width, ui_tree_node
@@ -199,7 +200,7 @@ class MeshStructure(Structure):
         self.vertices = vertices
         self.faces = faces
 
-        self.points_per_area = 1.0  # TODO: initialize with default
+        self.points_per_area = 1000
 
         # texture related
         self.param_corner = None
@@ -209,6 +210,8 @@ class MeshStructure(Structure):
         self.faces_unwrapped = None
         self.uvs = None
         self.vertices_unwrapped = None
+
+        self.mesh_surface_area = triangle_areas(self.vertices[self.faces]).sum()
 
         self._resolution_changed = False
         self._should_bake = False
@@ -291,6 +294,11 @@ class MeshStructure(Structure):
             if not expanded:
                 return
 
+            psim.Text(f"Mesh Surface Area: {self.mesh_surface_area:.2f}")
+            psim.Text(f"Texture Width: {self.texture_width:.2f}")
+            psim.SameLine()
+            psim.Text(f"Texture Height: {self.texture_height:.2f}")
+
             with ui_item_width(100):
                 changed, show = psim.Checkbox("Show", self.enabled)
                 if changed:
@@ -298,9 +306,8 @@ class MeshStructure(Structure):
 
                 psim.SameLine()
 
-                v_speed = 1.0
                 changed, resolution = psim.DragFloat(
-                    "Points / Unit Area", self.points_per_area, v_speed=v_speed, v_min=0.01, v_max=1000.0
+                    "Points / Unit Area", self.points_per_area, v_min=1.0, v_max=10000.0
                 )
                 if changed:
                     self.points_per_area = resolution
@@ -324,7 +331,9 @@ class MeshStructure(Structure):
             psim.Separator()
 
     def bake_texture(
-        self, sampler_func: Callable[[np.ndarray], np.ndarray], denoise_func: Callable[[np.ndarray], np.ndarray]
+        self,
+        sampler_func: Callable[[np.ndarray], np.ndarray],
+        denoise_func: Callable[[np.ndarray], np.ndarray],
     ):
         """
 
