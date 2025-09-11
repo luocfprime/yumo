@@ -113,8 +113,6 @@ class PointCloudStructure(Structure):
                                 self._points_render_mode = mode
                                 self.set_point_render_mode(mode)
 
-            psim.Separator()
-
             # --- Threshold control ---
             if self.is_valid():
                 q_values = self.points[:, 3]
@@ -132,6 +130,8 @@ class PointCloudStructure(Structure):
                     self.visualize_threshold = new_thresh
                     self.register(force=True)  # re-register structure + scalar quantities
                     self.update_all_quantities_colormap()
+
+            psim.Separator()
 
     def callback(self):
         pass
