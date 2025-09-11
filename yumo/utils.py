@@ -46,7 +46,7 @@ def load_mesh(file_path: str | Path, return_trimesh: bool = False) -> trimesh.Tr
     return mesh.vertices, mesh.faces
 
 
-def parse_plt_file(file_path: str | Path, skip_zeros: bool = True) -> np.ndarray:
+def parse_plt_file(file_path: str | Path, skip_zeros: bool = False) -> np.ndarray:
     logger.info(f"Parsing file: {file_path}")
     points = []
 
@@ -79,6 +79,17 @@ def parse_plt_file(file_path: str | Path, skip_zeros: bool = True) -> np.ndarray
         raise ValueError("No points left after filtering")
 
     return np.array(points)
+
+
+def write_plt_file(path: Path, points: np.ndarray):
+    """
+    Write points to a Tecplot ASCII .plt file (FEPOINT format).
+    """
+    n = len(points)
+    with open(path, "w") as f:
+        f.write("variables = x, y, z, Value(m-3)\n")
+        f.write(f"zone N={n}, E=0, F=FEPOINT, ET=POINT\n")
+        np.savetxt(f, points, fmt="%.6f")
 
 
 def generate_colorbar_image(

@@ -3,10 +3,12 @@
 import logging
 from pathlib import Path
 
+import trimesh
 import typer
 
 from yumo.__about__ import __application__
 from yumo.app import Config, PolyscopeApp
+from yumo.utils import load_mesh, parse_plt_file, write_plt_file
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -36,9 +38,57 @@ def configure_logging(log_level: str):
 
 
 @app.command()
-def prune():
-    """Prune data points that is inside the mesh."""
-    ...
+def prune(
+    data_path: Path = typer.Option(
+        ...,
+        "--data",
+        "-d",
+        help="Path to data file (e.g. Tecplot .plt file)",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+    data_out_path: Path = typer.Option(
+        ...,
+        "--data-out",
+        "-o",
+        help="Path to output data file (e.g. Tecplot .plt file)",
+        file_okay=True,
+        dir_okay=False,
+        writable=True,
+    ),
+    mesh_path: Path = typer.Option(
+        ...,
+        "--mesh",
+        "-m",
+        help="Path to mesh file (e.g. .stl file)",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+):
+    """Prune data points that are inside the mesh."""
+    typer.echo(f"Loading points from {data_path} ...")
+    points = parse_plt_file(data_path, skip_zeros=False)
+
+    typer.echo(f"Loading mesh from {mesh_path} ...")
+    mesh: trimesh.Trimesh = load_mesh(mesh_path, return_trimesh=True)  # type: ignore[assignment]
+    if not mesh.is_watertight:
+        typer.echo("Mesh is not watertight, skipping.")
+        return
+
+    typer.echo("Checking which points are inside mesh ...")
+    inside_mask = mesh.contains(points[:, :3])
+
+    typer.echo(f"Found {inside_mask.sum()} points inside the mesh, pruning ...")
+    kept_points = points[~inside_mask]
+
+    typer.echo(f"Writing {len(kept_points)} points to {data_out_path} ...")
+    write_plt_file(data_out_path, kept_points)
+
+    typer.echo("Done.")
 
 
 @app.command()
@@ -46,6 +96,7 @@ def viz(
     data_path: Path = typer.Option(
         ...,
         "--data",
+        "-d",
         help="Path to data file (e.g. Tecplot .plt file)",
         exists=True,
         file_okay=True,
@@ -55,6 +106,7 @@ def viz(
     mesh_path: Path | None = typer.Option(
         None,
         "--mesh",
+        "-m",
         help="Path to mesh file (e.g. .stl file)",
         exists=True,
         file_okay=True,
