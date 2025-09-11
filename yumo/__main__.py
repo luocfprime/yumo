@@ -5,9 +5,34 @@ from pathlib import Path
 
 import typer
 
+from yumo.__about__ import __application__
 from yumo.app import Config, PolyscopeApp
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
+
+
+def configure_logging(log_level: str):
+    # Map text log level to numeric
+    numeric_level = getattr(logging, log_level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise typer.BadParameter(f"Invalid log level: {log_level}")
+
+    # By default, root logger follows the chosen level
+    root_level = numeric_level
+
+    # Special case: if DEBUG is chosen, don't expose 3rd-party debug
+    if numeric_level == logging.DEBUG:
+        root_level = logging.INFO
+
+    # Configure root logger
+    logging.basicConfig(level=root_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+    # Configure application logger separately
+    app_logger = logging.getLogger(__application__)
+    if numeric_level == logging.DEBUG:
+        app_logger.setLevel(logging.DEBUG)
+    else:
+        app_logger.setLevel(numeric_level)
 
 
 @app.command()
@@ -49,11 +74,7 @@ def _(
     ),
 ) -> None:
     # Configure logging based on the provided log_level
-    numeric_level = getattr(logging, log_level.upper(), None)
-    if not isinstance(numeric_level, int):
-        raise typer.BadParameter(f"Invalid log level: {log_level}")
-
-    logging.basicConfig(level=numeric_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    configure_logging(log_level)
 
     PolyscopeApp(
         config=Config(

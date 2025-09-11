@@ -48,7 +48,7 @@ class Slice(Structure):
 
     def _do_register(self):
         """Register the slice mesh"""
-        logger.info(f"Registering slice mesh: '{self.name}'")
+        logger.debug(f"Registering slice mesh: '{self.name}'")
         self._vertices, self.faces = generate_slice_mesh(
             center=np.zeros(3),
             h=self.height,

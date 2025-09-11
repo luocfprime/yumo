@@ -33,7 +33,7 @@ class PolyscopeApp:
         self.context = Context()
         self.slices = Slices("slices", self.context)
         self.structures: dict[str, Structure] = {}
-        self._should_add_quantities = True
+        self._should_init_quantities = True
 
         self.load_and_prepare_data()
 
@@ -82,10 +82,6 @@ class PolyscopeApp:
             self.structures["mesh"] = MeshStructure(
                 "mesh", self.context, self.context.mesh_vertices, self.context.mesh_faces, enabled=True
             )
-
-        # 4. Prepare quantities (expensive, one-time calculations)
-        for structure in self.structures.values():
-            structure.prepare_quantities()
 
     def update_all_scalar_quantities_colormap(self):
         """Update colormaps on all structures (including slices)."""
@@ -143,7 +139,7 @@ class PolyscopeApp:
                         if selected and cmap_name != self.context.cmap:
                             self.context.cmap = cmap_name
                             needs_update = True
-                            logger.info(f"Selected colormap: {cmap_name}")
+                            logger.debug(f"Selected colormap: {cmap_name}")
 
             data_range = self.context.max_value - self.context.min_value
             v_speed = data_range / 1000.0 if data_range > 0 else 0.01
@@ -208,11 +204,15 @@ class PolyscopeApp:
             structure.register()
 
         # Phase 2: Add Scalar Quantities (runs only once via the flag)
-        if self._should_add_quantities:
-            logger.debug("Adding prepared scalar quantities to Polyscope structures.")
+        if self._should_init_quantities:
+            # Prepare quantities (expensive, one-time calculations)
+            for structure in self.structures.values():
+                structure.prepare_quantities()
+
+            # Add quantities to Polyscope structures
             for structure in self.structures.values():
                 structure.add_prepared_quantities()
-            self._should_add_quantities = False  # Prevent this from running again
+            self._should_init_quantities = False  # Prevent this from running again
 
         # Other callbacks
         for structure in self.structures.values():

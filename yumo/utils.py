@@ -11,7 +11,7 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 
-def parse_plt_file(file_path: str | Path, skip_zeros: bool = True) -> np.ndarray[np.float64]:
+def parse_plt_file(file_path: str | Path, skip_zeros: bool = True) -> np.ndarray:
     logger.info(f"Parsing file: {file_path}")
     points = []
 
