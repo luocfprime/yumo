@@ -3,7 +3,7 @@ import os
 import numpy as np
 from PIL import Image, ImageChops
 
-from yumo.geometry_utils import unwrap_uv, uv_binary_mask
+from yumo.geometry_utils import unwrap_uv, uv_mask
 
 
 def test_uv_binary_mask(test_data, tmp_path):
@@ -36,7 +36,7 @@ def test_uv_binary_mask(test_data, tmp_path):
     ) = unwrap_uv(vertices, faces)
 
     # -- 3. Generate UV binary mask --
-    mask = uv_binary_mask(uvs, faces_unwrapped, W, H)
+    mask = uv_mask(uvs, faces_unwrapped, W, H)
 
     # make sure mask is bool
     assert mask.dtype == np.dtype("bool")

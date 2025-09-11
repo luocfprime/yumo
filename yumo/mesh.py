@@ -18,7 +18,7 @@ from yumo.geometry_utils import (
     sample_surface,
     triangle_areas,
     unwrap_uv,
-    uv_binary_mask,
+    uv_mask,
 )
 from yumo.ui import ui_combo, ui_item_width, ui_tree_node
 
@@ -57,7 +57,8 @@ class MeshStructure(Structure):
         self._display_mode = "preview"  # one of "preview", "baked"
 
         self._enable_denoise = True
-        self._denoise_method = "linear"  # one of DENOISE_METHODS
+        self._denoise_method = DENOISE_METHODS[0]  # one of DENOISE_METHODS
+        self._denoise_kwargs = {}
 
     @property
     def polyscope_structure(self):
@@ -105,7 +106,7 @@ class MeshStructure(Structure):
             sampler_func=lambda p: np.ones(p.shape[0]) * self.app_context.color_max,  # 0 (no fill); color_max (filled)
         )
         tex = self.raw_texture
-        tex[self.uv_mask == 0] = 0
+        tex = tex * self.uv_mask
         self.prepared_quantities[self.QUANTITY_NAME] = tex
 
     def update_data_texture(self):
@@ -115,11 +116,11 @@ class MeshStructure(Structure):
         )
 
         if self._enable_denoise:
-            tex = denoise_texture(self.raw_texture, method=self._denoise_method)
+            tex = denoise_texture(self.raw_texture, method=self._denoise_method, **self._denoise_kwargs)
         else:
             tex = self.raw_texture.copy()
 
-        tex[self.uv_mask == 0] = 0  # mask out unsampled areas
+        tex = tex * self.uv_mask  # mask out unsampled areas
         self.prepared_quantities[self.QUANTITY_NAME] = tex
 
     def update_texture(self):
@@ -171,7 +172,7 @@ class MeshStructure(Structure):
             self.vertices_unwrapped,
         ) = unwrap_uv(self.vertices, self.faces)
 
-        self.uv_mask = uv_binary_mask(
+        self.uv_mask = uv_mask(
             uvs=self.uvs,
             faces_unwrapped=self.faces_unwrapped,
             texture_width=self.texture_width,
@@ -203,6 +204,29 @@ class MeshStructure(Structure):
             enabled=True,
         )
 
+    def _ui_texture_denoise_method(self):
+        """Texture denoise method selection"""
+        changed, denoise_enabled = psim.Checkbox("Enable Denoise", self._enable_denoise)
+        if changed:
+            self._enable_denoise = denoise_enabled
+            self._need_update = self._display_mode == "baked"
+
+        psim.SameLine()
+
+        with ui_combo("Denoise Method", self._denoise_method) as expanded:
+            if expanded:
+                for method in DENOISE_METHODS:
+                    selected, _ = psim.Selectable(method, method == self._denoise_method)
+                    if selected and method != self._denoise_method:
+                        self._denoise_method = method
+                        self._need_update = self._display_mode == "baked"
+
+        if self._denoise_method in ["nearest_and_gaussian", "gaussian"]:
+            changed, sigma = psim.DragFloat("Sigma", self._denoise_kwargs.get("sigma", 1.0), v_min=0.0, v_max=16.0)
+            if changed:
+                self._denoise_kwargs["sigma"] = sigma
+                self._need_update = self._display_mode == "baked"
+
     def ui(self):
         """Mesh related UI"""
         with ui_tree_node("Mesh", open_first_time=True) as expanded:
@@ -214,7 +238,7 @@ class MeshStructure(Structure):
             psim.SameLine()
             psim.Text(f"Texture Height: {self.texture_height:.2f}")
 
-            with ui_item_width(100):
+            with ui_item_width(120):
                 changed, show = psim.Checkbox("Show", self.enabled)
                 if changed:
                     self.set_enabled(show)
@@ -231,24 +255,11 @@ class MeshStructure(Structure):
 
                 psim.SameLine()
 
-                changed, denoise_enabled = psim.Checkbox("Enable Denoise", self._enable_denoise)
-                if changed:
-                    self._enable_denoise = denoise_enabled
-                    self._need_update = self._display_mode == "baked"
-
-                with ui_combo("Denoise Method", self._denoise_method) as expanded:
-                    if expanded:
-                        for method in DENOISE_METHODS:
-                            selected, _ = psim.Selectable(method, method == self._denoise_method)
-                            if selected and method != self._denoise_method:
-                                self._denoise_method = method
-                                self._need_update = self._display_mode == "baked"
-
-                psim.SameLine()
-
                 if psim.Button("Bake"):
                     self._need_update = True
                     self._display_mode = "baked"
+
+                self._ui_texture_denoise_method()
 
             psim.Separator()
 

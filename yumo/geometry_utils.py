@@ -3,8 +3,7 @@ import logging
 import cv2
 import numpy as np
 import xatlas
-from scipy.interpolate import griddata
-from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import distance_transform_edt, gaussian_filter
 from scipy.spatial import KDTree
 
 from yumo.utils import profiler
@@ -15,73 +14,111 @@ logger = logging.getLogger(__name__)
 def unwrap_uv(
     vertices: np.ndarray,
     faces: np.ndarray,
+    padding: int = 16,
 ) -> tuple[np.ndarray, int, int, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Performs UV unwrapping for a given 3D mesh using the xatlas library.
-
-    This function takes a mesh defined by vertices and faces, generates a UV atlas,
-    and returns the unwrapped mesh data along with the atlas properties. The UV
-    atlas maps the 3D surface of the mesh onto a 2D plane, which is essential
-    for applying textures.
+    Performs UV unwrapping for a given 3D mesh using the xatlas library with
+    padding settings to reduce UV bleeding.
 
     Args:
-        vertices (np.ndarray): A NumPy array of shape (N, 3) representing the
-            3D coordinates of the N mesh vertices.
-        faces (np.ndarray): A NumPy array of shape (M, 3) representing the M
-            triangular faces of the mesh. Each face is defined by three indices
-            into the `vertices` array.
+        vertices (np.ndarray): (N, 3) float array of mesh vertex positions.
+        faces (np.ndarray): (M, 3) int array of triangular face indices.
+        padding (int): Padding in pixels between UV islands (default=16px).
 
     Returns:
-        Tuple[np.ndarray, int, int, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        A tuple containing the following elements:
-        - param_corner (np.ndarray): Shape (M * 3, 2). UV coordinates for each
-          corner of each unwrapped face. Useful for some rendering APIs.
-        - texture_height (int): The height of the generated texture atlas in pixels.
-        - texture_width (int): The width of the generated texture atlas in pixels.
-        - vmapping (np.ndarray): Shape (V,). An index array of length V (number of
-          unwrapped vertices) that maps each unwrapped vertex back to its
-          original vertex index in the input `vertices` array.
-        - faces_unwrapped (np.ndarray): Shape (M, 3). The face index array for the
-          new unwrapped mesh. The indices refer to the `vertices_unwrapped` and `uvs` arrays.
-        - uvs (np.ndarray): Shape (V, 2). The UV coordinates for each of the V
-          unwrapped vertices. The coordinates are normalized to the range [0, 1].
-        - vertices_unwrapped (np.ndarray): Shape (V, 3). The 3D coordinates of the
-          V unwrapped vertices. This is essentially `vertices[vmapping]`.
+        Tuple containing:
+        - param_corner (np.ndarray): (M*3, 2) UV coords per face corner.
+        - texture_height (int): Atlas height in pixels.
+        - texture_width (int): Atlas width in pixels.
+        - vmapping (np.ndarray): (V,) mapping of unwrapped vertex → original vertex.
+        - faces_unwrapped (np.ndarray): (M, 3) face indices into unwrapped verts.
+        - uvs (np.ndarray): (V, 2) UV coords ∈ [0, 1].
+        - vertices_unwrapped (np.ndarray): (V, 3) unwrapped vertex positions.
     """
     atlas = xatlas.Atlas()
     atlas.add_mesh(vertices, faces)
-    chart_options = xatlas.ChartOptions()
-    atlas.generate(chart_options=chart_options)
-    vmapping, faces_unwrapped, uvs = atlas[0]  # [N], [M, 3], [N, 2]
 
+    # Chart options (optional - default usually works fine)
+    chart_options = xatlas.ChartOptions()
+
+    # Pack with resolution & padding to avoid bleeding
+    pack_options = xatlas.PackOptions()
+    pack_options.padding = padding
+    pack_options.bilinear = True
+    pack_options.rotate_charts = True
+    atlas.generate(chart_options=chart_options, pack_options=pack_options)
+
+    # Get unwrapped data
+    vmapping, faces_unwrapped, uvs = atlas[0]  # [N], [M, 3], [N, 2]
     vertices_unwrapped = vertices[vmapping]
 
+    # Flatten per-corner UVs for APIs like OpenGL
     param_corner = uvs[faces_unwrapped].reshape(-1, 2)
 
     texture_height, texture_width = atlas.height, atlas.width
 
-    return param_corner, texture_height, texture_width, vmapping, faces_unwrapped, uvs, vertices_unwrapped
+    return (
+        param_corner,
+        texture_height,
+        texture_width,
+        vmapping,
+        faces_unwrapped,
+        uvs,
+        vertices_unwrapped,
+    )
 
 
-def uv_binary_mask(uvs: np.ndarray, faces_unwrapped: np.ndarray, texture_width: int, texture_height: int) -> np.ndarray:
+def uv_mask(
+    uvs: np.ndarray,
+    faces_unwrapped: np.ndarray,
+    texture_width: int,
+    texture_height: int,
+    dilation: int = 2,
+    supersample: int = 4,
+) -> np.ndarray:
     """
-    Creates a binary mask indicating which parts of the texture atlas
-    are occupied by the mesh (1) and which are empty (0).
-    """
-    # Convert UVs from [0,1] to pixel coordinates
-    uv_pixels = np.zeros_like(uvs)
-    uv_pixels[:, 0] = uvs[:, 0] * (texture_width - 1)
-    uv_pixels[:, 1] = (1.0 - uvs[:, 1]) * (texture_height - 1)  # flip Y
+    Creates a binary (or soft) mask indicating which parts of the texture atlas
+    are occupied by the mesh (True) and which are empty (False).
 
-    # Initialize mask
-    mask = np.zeros((texture_height, texture_width), dtype=np.uint8)
+    Args:
+        uvs: (N,2) UV coordinates in [0,1].
+        faces_unwrapped: (F,3) triangle indices into uvs.
+        texture_width: target texture width in pixels.
+        texture_height: target texture height in pixels.
+        dilation: number of pixels to expand the mask after rasterization.
+        supersample: supersampling factor for more accurate rasterization.
+    """
+    # --- supersample resolution for smoother edges ---
+    hi_w = texture_width * supersample
+    hi_h = texture_height * supersample
+
+    # Convert UVs to high-res pixel coords
+    uv_pixels = np.zeros_like(uvs, dtype=np.float32)
+    uv_pixels[:, 0] = uvs[:, 0] * (hi_w - 1)
+    uv_pixels[:, 1] = (1.0 - uvs[:, 1]) * (hi_h - 1)  # flip Y
+
+    # Initialize high-res mask
+    hi_mask = np.zeros((hi_h, hi_w), dtype=np.uint8)
 
     # Rasterize triangles
     for face in faces_unwrapped:
         pts = uv_pixels[face].astype(np.int32).reshape((-1, 1, 2))
-        cv2.fillConvexPoly(mask, pts, 1)
+        cv2.fillConvexPoly(hi_mask, pts, 255)
 
-    return mask.astype(bool)
+    # Downsample back to target resolution with area interpolation
+    mask = cv2.resize(hi_mask, (texture_width, texture_height), interpolation=cv2.INTER_AREA)
+
+    # Normalize to [0,1] float mask (soft edges preserved)
+    mask = mask.astype(np.float32) / 255.0
+
+    # Optional dilation to pad seams (applied on final resolution)
+    if dilation > 0:
+        kernel = np.ones((dilation, dilation), np.uint8)
+        hard_mask = (mask > 0).astype(np.uint8) * 255
+        dilated = cv2.dilate(hard_mask, kernel, iterations=1)
+        mask = np.maximum(mask, dilated.astype(np.float32) / 255.0)
+
+    return mask
 
 
 def triangle_areas(tri_vertices: np.ndarray) -> np.ndarray:
@@ -229,7 +266,7 @@ def bake_to_texture(
     return tex_sum
 
 
-def nearest_fill(texture):
+def nearest_fill(texture, max_dist=16, **kwargs):  # kwargs for compatibility
     # mask: 1 for missing (0), 0 for valid
     mask = texture == 0
 
@@ -237,23 +274,29 @@ def nearest_fill(texture):
 
     # Fill with nearest value
     filled = texture[tuple(indices)]
+    filled[dist > max_dist] = 0  # drop far-away fills
+
     return filled
 
 
-def linear_fill(texture):
-    h, w = texture.shape
-    y, x = np.mgrid[0:h, 0:w]
+def nearest_and_blur(
+    texture, blur_sigma=1.0, max_dist=16, **kwargs
+):  # max dist should be smaller than the padding in unwrap_uv
+    mask = texture > 0
+    dist, idxs = distance_transform_edt(~mask, return_indices=True)
+    nearest = texture[tuple(idxs)]
+    nearest[dist > max_dist] = 0  # drop far-away fills
 
-    known = texture > 0
-    coords = np.column_stack((x[known], y[known]))
-    values = texture[known]
+    smoothed = gaussian_filter(nearest, sigma=blur_sigma)
+    return smoothed
 
-    filled = griddata(coords, values, (x, y), method="linear", fill_value=0)
-    return filled
+
+def blur(texture, sigma=1.0, **kwargs):
+    return gaussian_filter(texture, sigma=sigma)
 
 
 @profiler(profiler_logger=logger)
-def denoise_texture(texture, method="linear"):
+def denoise_texture(texture, method="nearest_and_gaussian", **kwargs):
     """
     Fill missing (zero) values in a sparse 2D texture map using interpolation.
 
@@ -263,7 +306,8 @@ def denoise_texture(texture, method="linear"):
             Zero entries are treated as missing data to be filled.
         method (str, optional):
             Interpolation method to use. Options are:
-            - "linear": Fill using linear interpolation over known non-zero points.
+            - "gaussian": Simple gaussian filter.
+            - "nearest_and_gaussian": Fill using nearest-neighbour then gaussian blur.
             - "nearest": Fill using nearest-neighbor interpolation.
             Defaults to "linear".
 
@@ -275,10 +319,12 @@ def denoise_texture(texture, method="linear"):
     Raises:
         ValueError: If `method` is not one of {"linear", "nearest"}.
     """
-    if method == "linear":
-        return linear_fill(texture)
+    if method == "gaussian":
+        return blur(texture, **kwargs)
+    elif method == "nearest_and_gaussian":
+        return nearest_and_blur(texture, **kwargs)
     elif method == "nearest":
-        return nearest_fill(texture)
+        return nearest_fill(texture, **kwargs)
     else:
         raise ValueError(f"Invalid method: {method}. Must be one of 'linear' or 'nearest'.")
 
