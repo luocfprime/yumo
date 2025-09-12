@@ -182,7 +182,7 @@ class PolyscopeApp:
 
         psim.Separator()
 
-    def _handle_mesh_pick(self, pick_result: ps.PickResult) -> float | None:
+    def _handle_mesh_pick(self, pick_result: ps.PickResult) -> float | None:  # type: ignore[no-any-unimported]
         """Handle mesh picking cases: face, vertex, corner."""
         logger.debug("Picked mesh")
         mesh: MeshStructure = self.structures["mesh"]  # type: ignore[assignment]
