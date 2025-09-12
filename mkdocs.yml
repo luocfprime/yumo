@@ -8,6 +8,8 @@ copyright: Maintained by <a href="https://github.com/luocfprime">luocfprime</a>.
 
 nav:
   - Home: index.md
+  - Install: install.md
+  - Usage: usage.md
   - Modules: modules.md
 
 plugins:
@@ -28,10 +30,16 @@ plugins:
         - locale: zh
           name: Chinese
           build: true
+  - macros:
+      j2_variable_start_string: '[['
+      j2_variable_end_string: ']]'
+
 theme:
   name: material
-  feature:
-    tabs: true
+  features:
+    - content.tabs.link
+    - content.code.annotate
+    - content.code.copy
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -56,14 +64,38 @@ extra:
       link: https://github.com/luocfprime/yumo
   alternate:
     - name: English
-      link: en/
+      link: ''
       lang: en
     - name: Chinese
       link: zh/
       lang: zh
+  url:
+    prefix: ''
 
 markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
   - toc:
       permalink: true
   - pymdownx.arithmatex:
       generic: true
+  - pymdownx.betterem:
+      smart_enable: underscore
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde

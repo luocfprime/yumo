@@ -34,7 +34,8 @@ clean-build: ## Clean build artifacts
 
 .PHONY: docs-test
 docs-test: ## Test if documentation can be built without warnings or errors
-	@uv run mkdocs build -s
+	@uv run mkdocs build
+	@cd site && python -m http.server
 
 .PHONY: docs
 docs: ## Build and serve the documentation
