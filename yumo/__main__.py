@@ -8,6 +8,7 @@ import typer
 
 from yumo.__about__ import __application__
 from yumo.app import Config, PolyscopeApp
+from yumo.constants import DATA_PREPROCESS_METHODS
 from yumo.utils import load_mesh, parse_plt_file, write_plt_file
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
@@ -121,6 +122,12 @@ def viz(
         max=1.0,
         help="Sampling rate for large datasets (0.0-1.0)",
     ),
+    preprocess_method: str = typer.Option(
+        "identity",
+        "--preprocess-method",
+        "--prep",
+        help=f"Method to preprocess data. One of {DATA_PREPROCESS_METHODS}",
+    ),
     skip_zeros: bool = typer.Option(
         False,
         help="Skip loading points with values = 0.0",
@@ -141,6 +148,7 @@ def viz(
             mesh_path=mesh_path,
             sample_rate=sample_rate,
             skip_zeros=skip_zeros,
+            data_preprocess_method=preprocess_method,
         )
     ).run()
 

@@ -13,7 +13,13 @@ from yumo.mesh import MeshStructure
 from yumo.point_cloud import PointCloudStructure
 from yumo.slices import Slices
 from yumo.ui import ui_combo, ui_item_width, ui_tree_node
-from yumo.utils import estimate_densest_point_distance, generate_colorbar_image, load_mesh, parse_plt_file
+from yumo.utils import (
+    data_transform,
+    estimate_densest_point_distance,
+    generate_colorbar_image,
+    load_mesh,
+    parse_plt_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +31,14 @@ class Config:
     mesh_path: Path | None
     sample_rate: float
     skip_zeros: bool
+    data_preprocess_method: str
 
 
 # --- Main Application ---
 class PolyscopeApp:
     def __init__(self, config: Config):
         self.config = config
-        self.context = Context()
+        self.context = Context(data_preprocess_method=config.data_preprocess_method)
         self.slices = Slices("slices", self.context)
         self.structures: dict[str, Structure] = {}
         self._should_init_quantities = True
@@ -51,6 +58,8 @@ class PolyscopeApp:
                 points.shape[0], size=int(points.shape[0] * self.config.sample_rate), replace=False
             )
             points = points[indices]
+
+        points = data_transform(points, method=self.config.data_preprocess_method)
 
         self.context.points = points
 
@@ -185,6 +194,7 @@ class PolyscopeApp:
             cmap=self.context.cmap,
             c_min=self.context.color_min,
             c_max=self.context.color_max,
+            method=self.context.data_preprocess_method,
         )
         ps.add_color_image_quantity(
             "colorbar",

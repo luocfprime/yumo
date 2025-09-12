@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from yumo.constants import CMAPS
+from yumo.constants import CMAPS, DATA_PREPROCESS_METHODS
 
 
 # --- Context ---
@@ -27,3 +27,5 @@ class Context:
     cmap: str = CMAPS[0]
     color_min: float = None  # type: ignore[assignment]
     color_max: float = None  # type: ignore[assignment]
+
+    data_preprocess_method: str = DATA_PREPROCESS_METHODS[0]

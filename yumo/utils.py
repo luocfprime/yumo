@@ -93,10 +93,10 @@ def write_plt_file(path: Path, points: np.ndarray):
 
 
 def generate_colorbar_image(
-    colorbar_height: int, colorbar_width: int, cmap: str, c_min: float, c_max: float
+    colorbar_height: int, colorbar_width: int, cmap: str, c_min: float, c_max: float, method: str = "identity"
 ) -> np.ndarray:
     """
-    Generate a colorbar image as a numpy array.
+    Generate a colorbar image as a numpy array with different labeling methods.
 
     Args:
         colorbar_height: Height of the colorbar image
@@ -104,6 +104,10 @@ def generate_colorbar_image(
         cmap: Matplotlib colormap name
         c_min: Minimum value for the colorbar
         c_max: Maximum value for the colorbar
+        method: Display method for the colorbar values. Options:
+            - "identity": Regular values (default)
+            - "log_e": Label as e^value
+            - "log_10": Label as 10^value
 
     Returns:
         Numpy array of the colorbar image with values in [0, 1]
@@ -140,13 +144,29 @@ def generate_colorbar_image(
     tick_positions = np.linspace(bar_start_y, bar_end_y, num_ticks)
     text_x_pos = bar_x_pos + bar_width + 10
 
+    # Set the formatter based on method
+    if method == "identity":
+        # method_label = "Linear Scale"
+        formatter = lambda x: f"{x:.2g}"
+    elif method == "log_e":
+        # method_label = "Natural Log Scale"
+        formatter = lambda x: f"e^{x:.2g}"
+    elif method == "log_10":
+        # method_label = "Log10 Scale"
+        formatter = lambda x: f"10^{x:.2g}"
+    else:
+        raise ValueError(f"Unsupported method: {method}. Use 'identity', 'log_e', or 'log_10'")
+
+    # # Add method label
+    # draw.text((bar_x_pos, 5), method_label, fill="black", font=font)
+
     for i, (val, pos) in enumerate(zip(tick_values, tick_positions, strict=False)):
         if i == 0:
-            label = f">= {val:.2g}"
+            label = f">= {formatter(val)}"
         elif i == len(tick_values) - 1:
-            label = f"<= {val:.2g}"
+            label = f"<= {formatter(val)}"
         else:
-            label = f"{val:.2g}"
+            label = formatter(val)
         draw.line(
             [(bar_x_pos + bar_width, pos), (bar_x_pos + bar_width + 5, pos)],
             fill="black",
@@ -211,3 +231,44 @@ def estimate_densest_point_distance(points: np.ndarray, k: int = 1000, quantile:
         filtered_distances = nearest_distances
 
     return float(np.mean(filtered_distances))
+
+
+def data_transform(points: np.ndarray, method: str) -> np.ndarray:
+    """
+    Preprocess the last column of (N, 4) points array using data transform.
+
+    Args:
+        points (np.ndarray): Array of shape (N, 4). The first three columns are coordinates,
+                             the last column is the scalar value to be transformed.
+        method (str): Preprocessing method. One of {"identity", "log_e", "log_10"}.
+
+    Returns:
+        np.ndarray: Preprocessed points with the same shape.
+    """
+    if method == "identity":
+        # No transformation
+        return points
+
+    elif method in ("log_e", "log_10"):
+        transformed = points.copy()
+
+        # 1. Select base
+        log_fn = np.log if method == "log_e" else np.log10
+
+        # 2. Apply log to positive values only
+        nonzero_mask = transformed[:, 3] > 0
+        transformed[nonzero_mask, 3] = log_fn(transformed[nonzero_mask, 3])
+
+        # 3. Find min value among transformed positives
+        if np.any(nonzero_mask):
+            min_value = np.min(transformed[nonzero_mask, 3])
+        else:
+            raise ValueError(f"No positive values found for {method} transform.")
+
+        # 4. Replace non-positive values with min_value
+        transformed[transformed[:, 3] <= 0, 3] = min_value
+
+        return transformed
+
+    else:
+        raise ValueError(f"Unknown data preprocess method: {method}")
