@@ -64,13 +64,14 @@ extra:
       link: https://github.com/luocfprime/yumo
   alternate:
     - name: English
-      link: ''
+      link: en
       lang: en
     - name: Chinese
       link: zh/
       lang: zh
   url:
-    prefix: ''
+    prefix: '.'
+    videos: '/yumo'
 
 markdown_extensions:
   - abbr

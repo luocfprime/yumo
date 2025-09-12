@@ -99,7 +99,7 @@ yumo viz --data xxxx.plt --mesh yyyy.STL
     只有点击Bake按钮后，才会真正执行采样、赋值给texture的过程。
 
     <video width=100% autoplay muted loop>
-      <source src="[[url.prefix]]/media/movies/surface_sampling.mp4" type="video/mp4">
+      <source src="[[url.videos]]/media/movies/surface_sampling.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
 

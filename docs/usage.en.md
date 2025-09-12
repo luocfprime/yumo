@@ -99,7 +99,7 @@ yumo viz --data xxxx.plt --mesh yyyy.STL
     Only after clicking the Bake button will the process of sampling and assigning values to the texture be actually executed.
 
     <video width=100% autoplay muted loop>
-      <source src="[[url.prefix]]/media/movies/surface_sampling.mp4" type="video/mp4">
+      <source src="[[url.videos]]/media/movies/surface_sampling.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
 

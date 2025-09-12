@@ -9,6 +9,6 @@
 - 空间切面可视化
 
 <video width=100% autoplay muted loop>
-  <source src="[[url.prefix]]/media/movies/teaser.mp4" type="video/mp4">
+  <source src="[[url.videos]]/media/movies/teaser.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
