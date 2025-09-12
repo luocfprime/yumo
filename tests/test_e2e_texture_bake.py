@@ -33,7 +33,7 @@ def test_e2e_texture_bake(test_data, tmp_path):
         faces_unwrapped,
         uvs,
         vertices_unwrapped,
-    ) = unwrap_uv(vertices, faces)
+    ) = unwrap_uv(vertices, faces, brute_force=True)  # set to True for deterministic results
 
     # -- 3. Sample surface --
     rng = np.random.default_rng(42)

@@ -12,9 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def unwrap_uv(
-    vertices: np.ndarray,
-    faces: np.ndarray,
-    padding: int = 16,
+    vertices: np.ndarray, faces: np.ndarray, padding: int = 16, brute_force: bool = False
 ) -> tuple[np.ndarray, int, int, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Performs UV unwrapping for a given 3D mesh using the xatlas library with
@@ -24,6 +22,7 @@ def unwrap_uv(
         vertices (np.ndarray): (N, 3) float array of mesh vertex positions.
         faces (np.ndarray): (M, 3) int array of triangular face indices.
         padding (int): Padding in pixels between UV islands (default=16px).
+        brute_force (bool): Slower, but gives the best result. If false, use random chart placement.
 
     Returns:
         Tuple containing:
@@ -46,6 +45,7 @@ def unwrap_uv(
     pack_options.padding = padding
     pack_options.bilinear = True
     pack_options.rotate_charts = True
+    pack_options.bruteForce = brute_force
     atlas.generate(chart_options=chart_options, pack_options=pack_options)
 
     # Get unwrapped data

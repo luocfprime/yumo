@@ -33,7 +33,7 @@ def test_uv_binary_mask(test_data, tmp_path):
         faces_unwrapped,
         uvs,
         vertices_unwrapped,
-    ) = unwrap_uv(vertices, faces)
+    ) = unwrap_uv(vertices, faces, brute_force=True)  # set to True for deterministic results
 
     # -- 3. Generate UV binary mask --
     mask = uv_mask(uvs, faces_unwrapped, W, H)
