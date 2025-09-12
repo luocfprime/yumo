@@ -131,7 +131,7 @@ class PointCloudStructure(Structure):
                     self.register(force=True)  # re-register structure + scalar quantities
                     self.update_all_quantities_colormap()
 
-            psim.Separator()
+        psim.Separator()
 
     def callback(self):
         pass

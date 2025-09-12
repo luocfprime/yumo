@@ -276,7 +276,7 @@ class MeshStructure(Structure):
 
                 self._ui_texture_denoise_method()
 
-            psim.Separator()
+        psim.Separator()
 
         self._ui_texture_map_display()
 
