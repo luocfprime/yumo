@@ -131,7 +131,7 @@ def viz(
         help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
     ),
 ) -> None:
-    """Visualize the scalar field"""
+    """Visualize the scalar field."""
     # Configure logging based on the provided log_level
     configure_logging(log_level)
 
