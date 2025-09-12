@@ -1,10 +1,17 @@
 import os
+import platform
 
 import numpy as np
+import pytest
 from PIL import Image, ImageChops
 
 from yumo.geometry_utils import unwrap_uv, uv_mask
 from yumo.utils import load_mesh
+
+pytestmark = pytest.mark.skipif(
+    platform.system() != "Darwin",
+    reason="Golden standards are only available on macOS (for now, where this is mainly developed).",
+)
 
 
 def test_uv_binary_mask(test_data, tmp_path):

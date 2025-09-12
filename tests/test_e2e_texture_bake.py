@@ -1,10 +1,17 @@
 import os
+import platform
 
 import numpy as np
+import pytest
 from PIL import Image, ImageChops
 
 from yumo.geometry_utils import bake_to_texture, map_to_uv, sample_surface, unwrap_uv
 from yumo.utils import load_mesh
+
+pytestmark = pytest.mark.skipif(
+    platform.system() != "Darwin",
+    reason="Golden standards are only available on macOS (for now, where this is mainly developed).",
+)
 
 
 def test_e2e_texture_bake(test_data, tmp_path):
