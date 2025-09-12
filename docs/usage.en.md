@@ -23,7 +23,7 @@ The visualization contains three main components and several smaller widgets.
 2. Spatial slice visualization: Views the distribution of 3D scalar fields on slices.
 3. Mesh surface field strength visualization: Visualizes the distribution of 3D scalar fields on the mesh surface.
 
-Use `yumo vis -h` to view command line parameters.
+Use `yumo viz -h` to view command line parameters.
 
 E.g.
 

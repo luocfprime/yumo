@@ -23,7 +23,7 @@
 2. 空间切面可视化：查看3D标量场在切面上的分布。
 3. mesh表面场强分布可视化：可视化3D标量场在mesh的表面分布。
 
-使用`yumo vis -h`查看命令行参数。
+使用`yumo viz -h`查看命令行参数。
 
 E.g.
 
@@ -95,7 +95,7 @@ yumo viz --data xxxx.plt --mesh yyyy.STL
 
 !!! warning "注意"
 
-    当拖动采样率时，会可视化当前表面上的采样点。==**此时现实的采样点不是真实数据，而是color map的最大值。**==
+    当拖动采样率时，会可视化当前表面上的采样点。==**此时显示的采样点不是真实数据，而是color map的最大值。**==
     只有点击Bake按钮后，才会真正执行采样、赋值给texture的过程。
 
     <video width=100% autoplay muted loop>
@@ -110,7 +110,7 @@ yumo viz --data xxxx.plt --mesh yyyy.STL
 1. Colormap。
 2. 可视化最小值。（低于最小值的颜色统一为最小值的颜色）
 3. 可视化最大值。（高于最大值的颜色统一为最大值的颜色）
-4. 重制范围。
+4. 重置范围。
 
 !!! warning "注意"
 
