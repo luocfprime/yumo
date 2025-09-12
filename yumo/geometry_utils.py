@@ -237,6 +237,7 @@ def query_scalar_field(points_coord: np.ndarray, data_points: np.ndarray) -> np.
     return interpolated_values  # type: ignore[no-any-return]
 
 
+@profiler(profiler_logger=logger)
 def bake_to_texture(
     sample_uvs: np.ndarray,
     values: np.ndarray,

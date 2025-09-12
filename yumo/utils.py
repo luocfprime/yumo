@@ -272,3 +272,26 @@ def data_transform(points: np.ndarray, method: str) -> np.ndarray:
 
     else:
         raise ValueError(f"Unknown data preprocess method: {method}")
+
+
+def fmtn(vec: np.ndarray | list[float] | tuple[float, ...], n: int, precision: int = 2) -> str:
+    """Format the first n components of a vector with fixed precision.
+
+    Args:
+        vec: Vector (numpy array, list, or tuple of floats).
+        n: Number of components to format.
+        precision: Decimal precision.
+
+    Returns:
+        A string like "(x1, x2, ..., xn)" with formatted floats.
+    """
+    formatted = [f"{vec[i]:.{precision}f}" for i in range(n)]
+    return f"({', '.join(formatted)})"
+
+
+def fmt2(vec: np.ndarray | list[float] | tuple[float, float], precision: int = 2) -> str:
+    return fmtn(vec, 2, precision)
+
+
+def fmt3(vec: np.ndarray | list[float] | tuple[float, float, float], precision: int = 2) -> str:
+    return fmtn(vec, 3, precision)

@@ -9,6 +9,7 @@ import polyscope.imgui as psim
 from yumo.base_structure import Structure
 from yumo.constants import CMAPS
 from yumo.context import Context
+from yumo.geometry_utils import map_to_uv, query_scalar_field
 from yumo.mesh import MeshStructure
 from yumo.point_cloud import PointCloudStructure
 from yumo.slices import Slices
@@ -16,6 +17,8 @@ from yumo.ui import ui_combo, ui_item_width, ui_tree_node
 from yumo.utils import (
     data_transform,
     estimate_densest_point_distance,
+    fmt2,
+    fmt3,
     generate_colorbar_image,
     load_mesh,
     parse_plt_file,
@@ -42,6 +45,9 @@ class PolyscopeApp:
         self.slices = Slices("slices", self.context)
         self.structures: dict[str, Structure] = {}
         self._should_init_quantities = True
+
+        self._picker_should_query_field = False
+        self._picker_msgs: list[str] = []
 
         self.prepare_data_and_init_structures()
 
@@ -110,26 +116,116 @@ class PolyscopeApp:
 
             if self.config.mesh_path:  # the mesh should be loaded if the path is provided
                 psim.Text(
-                    f"Mesh vertices: {len(self.context.mesh_vertices):,}, faces: {len(self.context.mesh_faces):,}"  # type: ignore[arg-type]
+                    f"Mesh vertices: {len(self.context.mesh_vertices):,}, "  # type: ignore[arg-type]
+                    f"faces: {len(self.context.mesh_faces):,}"  # type: ignore[arg-type]
                 )
 
             psim.Text(f"Points: {self.context.points.shape[0]:,}")
             psim.SameLine()
             psim.Text(f"Points densest distance: {self.context.points_densest_distance:.4g}")
 
-            psim.Text(
-                f"Points center: ({self.context.center[0]:.2f},{self.context.center[1]:.2f},{self.context.center[2]:.2f})"
-            )
-            psim.Text(
-                f"Bbox min: ({self.context.bbox_min[0]:.2f},{self.context.bbox_min[1]:.2f},{self.context.bbox_min[2]:.2f})"
-            )
-            psim.Text(
-                f"Bbox max: ({self.context.bbox_max[0]:.2f},{self.context.bbox_max[1]:.2f},{self.context.bbox_max[2]:.2f})"
-            )
+            psim.Text(f"Points center: {fmt3(self.context.center)}")
+            psim.Text(f"Bbox min: {fmt3(self.context.bbox_min)}")
+            psim.Text(f"Bbox max: {fmt3(self.context.bbox_max)}")
 
-            psim.Text(f"Data range: [{self.context.min_value:.2g}, {self.context.max_value:.2g}]")
+            psim.Text(f"Data preprocess: {self.context.data_preprocess_method}")
+            psim.Text(
+                f"{'Data' if self.context.data_preprocess_method == 'identity' else 'Preprocessed data'} range: "
+                f"[{self.context.min_value:.2g}, {self.context.max_value:.2g}]"
+            )
 
         psim.Separator()
+
+    def _ui_coord_picker(self):
+        with ui_tree_node("Coord Picker", open_first_time=False) as expanded:
+            if not expanded:
+                return
+
+        changed, query_field = psim.Checkbox("Query Field", self._picker_should_query_field)
+        if changed:
+            self._picker_should_query_field = query_field
+
+        io = psim.GetIO()
+        if io.MouseClicked[0]:  # left click
+            self._picker_msgs = []
+
+            screen_coords = io.MousePos
+            world_coords = ps.screen_coords_to_world_position(screen_coords)
+
+            msg = f"World coord picked: {world_coords}"
+            logger.debug(msg)
+            self._picker_msgs.append(msg)
+
+            pick_result: ps.PickResult = ps.pick(screen_coords=screen_coords)  # type: ignore[no-any-unimported]
+
+            if pick_result.is_hit:
+                logger.debug(pick_result.structure_data)
+                self._picker_msgs.append(f"Picked {pick_result.structure_name}: {pick_result.structure_data}")
+
+                field_value = None
+                if self._picker_should_query_field:
+                    field_value = query_scalar_field(world_coords, self.context.points)
+                    msg = f"Field value: {field_value:.4g}"
+                    logger.debug(msg)
+                    self._picker_msgs.append(msg)
+
+                if pick_result.structure_name == "mesh":
+                    texture_value = self._handle_mesh_pick(pick_result)
+                    if texture_value and field_value:
+                        rel_err = abs(texture_value - field_value) / field_value
+                        msg = f"Relative error: {rel_err * 100:,.2f}%"
+                        logger.debug(msg)
+                        self._picker_msgs.append(msg)
+
+        for msg in self._picker_msgs:
+            psim.Text(msg)
+
+        psim.Separator()
+
+    def _handle_mesh_pick(self, pick_result: ps.PickResult) -> float | None:
+        """Handle mesh picking cases: face, vertex, corner."""
+        logger.debug("Picked mesh")
+        mesh: MeshStructure = self.structures["mesh"]  # type: ignore[assignment]
+
+        data = pick_result.structure_data
+        if "bary_coords" in data:  # ---- face hit
+            barycentric_coord = data["bary_coords"].reshape(1, 3)
+            indices = np.array([data["index"]], dtype=int)
+            uv_coords = map_to_uv(
+                uvs=mesh.uvs,
+                faces_unwrapped=mesh.faces_unwrapped,
+                barycentric_coord=barycentric_coord,
+                indices=indices,
+            )
+        elif data["element_type"] == "vertex":  # ---- vertex hit
+            vert_index = data["index"]
+            uv_coords = mesh.uvs[vert_index][None, :]
+        elif data["element_type"] == "corner":  # ---- corner hit
+            corner_index = data["index"]
+            face_index = corner_index // 3
+            local_corner = corner_index % 3
+            vert_index = mesh.faces_unwrapped[face_index, local_corner]
+            uv_coords = mesh.uvs[vert_index][None, :]
+        else:
+            return None
+
+        # ---- sample texture map
+        texture_map = mesh.prepared_quantities[mesh.QUANTITY_NAME]
+        h, w = texture_map.shape[:2]
+
+        u, v = uv_coords[0]
+        j = int(np.clip(u * (w - 1), 0, w - 1))  # x axis
+        i = int(np.clip((1.0 - v) * (h - 1), 0, h - 1))  # y axis with flip
+
+        logger.debug(f"uv: {fmt2([u, v])}, hw: {h, w}, raster index: {i, j}")
+
+        texture_value = texture_map[i, j]
+        msg = f"Texture value: {texture_value:.4g}"
+
+        logger.debug(msg)
+        self._picker_msgs.append(msg)
+
+        return float(texture_value)
 
     def _ui_colorbar_controls(self):
         """Colorbar controls UI"""
@@ -233,6 +329,7 @@ class PolyscopeApp:
         self._ui_top_text_brief()
         self._ui_colorbar_controls()
         self._ui_colorbar_display()
+        self._ui_coord_picker()
 
         for structure in self.structures.values():
             structure.ui()
