@@ -116,12 +116,12 @@ yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
       Your browser does not support the video tag.
     </video>
 
-## Coord Picker
+### Coord Picker
 
 该功能允许你通过鼠标点击屏幕任意位置，获取该位置对应的坐标点，并查询其对应的场强值。
 可以通过折叠菜单来开启或关闭此功能，默认处于关闭状态。
 
-![coord picker](\[\[url.prefix]]/media/coord_picker.jpg)
+![coord picker]([[url.prefix]]/media/coord_picker.jpg)
 
 当勾选Query Field时，点击屏幕上任意非空位置，会通过**最近邻查找**获取该位置对应的点云数据点。
 

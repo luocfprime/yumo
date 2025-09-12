@@ -113,7 +113,7 @@ yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
       Your browser does not support the video tag.
     </video>
 
-## Coord Picker
+### Coord Picker
 
 This feature allows you to click on any position on the screen to get the coordinate point corresponding to the current screen coordinate and query the field strength value corresponding to the coordinate point.
 You can collapse and expand the menu to turn off and on this feature. It is off by default.
