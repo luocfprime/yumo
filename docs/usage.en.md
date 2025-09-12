@@ -35,13 +35,11 @@ yumo viz --data xxxx.plt --mesh yyyy.STL
 
 If you want to visualize data with a log scale, you can use the input data transformation feature by specifying the transformation method with `--prep`.
 
-!!! example "Input Data Log Scale Transformation"
+Example: Input data log scale transformation, where zeros in the original data will be replaced with the minimum value after transformation.
 
-    ```bash
-    yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
-    ```
-
-    Zeros in the original data will be replaced with the minimum value after transformation.
+```bash
+yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
+```
 
 ### Point Cloud
 

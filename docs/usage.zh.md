@@ -35,13 +35,14 @@ yumo viz --data xxxx.plt --mesh yyyy.STL
 
 如果你想让数据以log scale可视化，可以使用输入数据变换功能，通过`--prep`制定输入数据变换方式。
 
-!!! example "输入数据log scale变换"
+Example: 对输入数据log scale变换，其中原始数据中的0将会用变换后的最小值替换。
 
-    ```bash
-    yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
-    ```
+```bash
 
-    原始数据中的0将会用变换后的最小值替换。
+yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
+
+```
+
 
 ### 点云
 
