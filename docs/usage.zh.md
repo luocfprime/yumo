@@ -116,6 +116,20 @@ yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
       Your browser does not support the video tag.
     </video>
 
+## Coord Picker
+
+该功能允许你通过鼠标点击屏幕任意位置，获取该位置对应的坐标点，并查询其对应的场强值。
+可以通过折叠菜单来开启或关闭此功能，默认处于关闭状态。
+
+![coord picker](\[\[url.prefix]]/media/coord_picker.jpg)
+
+当勾选Query Field时，点击屏幕上任意非空位置，会通过**最近邻查找**获取该位置对应的点云数据点。
+
+⚠️ 注意：启用Query Field后，首次查询点云时可能会出现短暂卡顿，导致暂时无法顺畅拖拽视图。
+
+当点击mesh表面时，Coord Picker 会通过UV 坐标查询该表面纹理中记录的场强值。
+若同时启用了Query Field，还会计算纹理记录的场强值与点云查询得到的场强值之间的相对误差：e = |f_texture - f_pointcloud| / |f_pointcloud|。
+
 ### 颜色条
 
 ![color control]([[url.prefix]]/media/color_control.jpg)
