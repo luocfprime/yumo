@@ -5,7 +5,7 @@
     This tool consists of two parts:
 
     1. `yumo prune`: Removes data points inside the mesh model.
-    2. `yumo vis`: Interactive visualization.
+    2. `yumo viz`: Interactive visualization.
 
 ## Internal Point Pruning
 
@@ -30,6 +30,18 @@ E.g.
 ```bash
 yumo viz --data xxxx.plt --mesh yyyy.STL
 ```
+
+### Input Data Transformation
+
+If you want to visualize data with a log scale, you can use the input data transformation feature by specifying the transformation method with `--prep`.
+
+!!! example "Input Data Log Scale Transformation"
+
+    ```bash
+    yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
+    ```
+
+    Zeros in the original data will be replaced with the minimum value after transformation.
 
 ### Point Cloud
 

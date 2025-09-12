@@ -5,7 +5,7 @@
     本工具包含两部分：
 
     1. `yumo prune`：剪掉数据点云中在mesh模型内部的点。
-    2. `yumo vis`：交互式可视化。
+    2. `yumo viz`：交互式可视化。
 
 ## 内部点裁剪
 
@@ -30,6 +30,18 @@ E.g.
 ```bash
 yumo viz --data xxxx.plt --mesh yyyy.STL
 ```
+
+### 输入数据变换
+
+如果你想让数据以log scale可视化，可以使用输入数据变换功能，通过`--prep`制定输入数据变换方式。
+
+!!! example "输入数据log scale变换"
+
+    ```bash
+    yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
+    ```
+
+    原始数据中的0将会用变换后的最小值替换。
 
 ### 点云
 
