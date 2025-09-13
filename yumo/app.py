@@ -350,6 +350,7 @@ class PolyscopeApp:
         """Initialize and run the Polyscope application."""
         ps.set_program_name("Yumo")
         ps.set_print_prefix("[Yumo][Polyscope] ")
+        ps.set_ground_plane_mode("shadow_only")
 
         ps.init()
         ps.set_user_callback(self.callback)
