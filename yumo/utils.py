@@ -93,6 +93,20 @@ def write_plt_file(path: Path, points: np.ndarray):
         np.savetxt(f, points, fmt="%.6f")
 
 
+def convert_power_of_10_to_scientific(x):
+    """Convert 10^x to scientific notation a*10^b where b is an integer"""
+    actual_value = 10**x
+    exponent = int(np.floor(np.log10(actual_value)))
+    coefficient = actual_value / (10**exponent)
+    return coefficient, exponent
+
+
+def format_scientific(x):
+    """Format 10^x as aa.bbec where c is an integer"""
+    coefficient, exponent = convert_power_of_10_to_scientific(x)
+    return f"{coefficient:.2f}e{exponent}"
+
+
 def generate_colorbar_image(
     colorbar_height: int, colorbar_width: int, cmap: str, c_min: float, c_max: float, method: str = "identity"
 ) -> np.ndarray:
@@ -108,11 +122,12 @@ def generate_colorbar_image(
         method: Display method for the colorbar values. Options:
             - "identity": Regular values (default)
             - "log_e": Label as e^value
-            - "log_10": Label as 10^value
+            - "log_10": Label as aa.bbec format where c is an integer
 
     Returns:
         Numpy array of the colorbar image with values in [0, 1]
     """
+
     h, w = colorbar_height, colorbar_width
     img = Image.new("RGB", (w, h), "white")
     draw = ImageDraw.Draw(img)
@@ -148,13 +163,13 @@ def generate_colorbar_image(
     # Set the formatter based on method
     if method == "identity":
         # method_label = "Linear Scale"
-        formatter = lambda x: f"{x:.2g}"
+        formatter = lambda x: f"{x:.2f}"
     elif method == "log_e":
         # method_label = "Natural Log Scale"
-        formatter = lambda x: f"e^{x:.2g}"
+        formatter = lambda x: f"e^{x:.2f}"
     elif method == "log_10":
         # method_label = "Log10 Scale"
-        formatter = lambda x: f"10^{x:.2g}"
+        formatter = format_scientific
     else:
         raise ValueError(f"Unsupported method: {method}. Use 'identity', 'log_e', or 'log_10'")
 
