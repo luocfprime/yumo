@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from yumo.constants import CMAPS, DATA_PREPROCESS_METHODS
+from yumo.constants import DATA_PREPROCESS_METHODS
 
 
 # --- Context ---
@@ -24,7 +24,8 @@ class Context:
     points_densest_distance: np.float64 = None  # type: ignore[assignment]
 
     # Settings
-    cmap: str = CMAPS[0]
+    cmap: str = None  # type: ignore[assignment]
+    loaded_cmaps: dict[str, str] | None = None
     color_min: float = None  # type: ignore[assignment]
     color_max: float = None  # type: ignore[assignment]
 

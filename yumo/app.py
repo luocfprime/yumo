@@ -9,7 +9,7 @@ import polyscope as ps
 import polyscope.imgui as psim
 
 from yumo.base_structure import Structure
-from yumo.constants import CMAPS
+from yumo.constants import get_cmaps, set_cmaps
 from yumo.context import Context
 from yumo.geometry_utils import map_to_uv, query_scalar_field
 from yumo.mesh import MeshStructure
@@ -45,8 +45,23 @@ class Config:
 # --- Main Application ---
 class PolyscopeApp:
     def __init__(self, config: Config):
+        ps.set_program_name("Yumo")
+        ps.set_print_prefix("[Yumo][Polyscope] ")
+        ps.set_ground_plane_mode("shadow_only")
+        ps.set_up_dir("z_up")
+        ps.set_front_dir("x_front")
+
+        ps.init()
+
         self.config = config
+
+        loaded_cmaps = self.prepare_colormaps()
+
         self.context = Context(data_preprocess_method=config.data_preprocess_method)
+
+        self.context.cmap = get_cmaps()[0]  # initialize default colormap with the first one
+        self.context.loaded_cmaps = loaded_cmaps
+
         self.slices = Slices("slices", self.context)
         self.structures: dict[str, Structure] = {}
         self._should_init_quantities = True
@@ -57,6 +72,30 @@ class PolyscopeApp:
         self._picker_msgs: list[str] = []
 
         self.prepare_data_and_init_structures()
+
+    def prepare_colormaps(self) -> dict[str, str] | None:
+        root = Path(__file__).parent
+        cmap_dir = root / "assets" / "colormaps"
+
+        if not cmap_dir.exists():
+            logger.warning(f"Colormap directory not found: {cmap_dir}")
+            return None
+
+        loaded = {}
+        for path in cmap_dir.glob("*_colormap.png"):
+            name = path.stem.removesuffix("_colormap")  # e.g. "RdBu_colormap" -> "RdBu"
+            try:
+                ps.load_color_map(name, str(path))
+                loaded[name] = str(path)
+                logger.info(f"Loaded custom colormap: {name}")
+            except Exception as e:
+                logger.warning(f"Failed to load colormap {path.name}: {e}")
+
+        if loaded:
+            # Add them to the list of available colormaps
+            set_cmaps([*loaded.keys(), *get_cmaps()])
+
+        return loaded
 
     def prepare_data_and_init_structures(self):
         """Load data from files, create structures."""
@@ -281,7 +320,7 @@ class PolyscopeApp:
             # Colormap selection using the yumo helper
             with ui_combo("Colormap", self.context.cmap) as combo_expanded:
                 if combo_expanded:
-                    for cmap_name in CMAPS:
+                    for cmap_name in get_cmaps():
                         selected, _ = psim.Selectable(cmap_name, self.context.cmap == cmap_name)
                         if selected and cmap_name != self.context.cmap:
                             self.context.cmap = cmap_name
@@ -334,6 +373,7 @@ class PolyscopeApp:
             c_min=self.context.color_min,
             c_max=self.context.color_max,
             method=self.context.data_preprocess_method,
+            loaded_cmaps=self.context.loaded_cmaps,
         )
         ps.add_color_image_quantity(
             "colorbar",
@@ -382,14 +422,6 @@ class PolyscopeApp:
 
     def run(self):
         """Initialize and run the Polyscope application."""
-        ps.set_program_name("Yumo")
-        ps.set_print_prefix("[Yumo][Polyscope] ")
-        ps.set_ground_plane_mode("shadow_only")
-        ps.set_up_dir("z_up")
-        ps.set_front_dir("x_front")
-
-        ps.init()
-
         if self.config.camera_view_path:
             logger.info(f"Loading initial camera view from: {self.config.camera_view_path}")
             with open(self.config.camera_view_path) as f:

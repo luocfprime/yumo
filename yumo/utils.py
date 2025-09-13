@@ -9,11 +9,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import trimesh
+from matplotlib.colors import Colormap, LinearSegmentedColormap
 from PIL import Image, ImageDraw, ImageFont
 from scipy.spatial import KDTree
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
+
+_CMAP_CACHE: dict[str, Colormap] = {}
 
 
 class profiler(ContextDecorator):
@@ -107,8 +110,42 @@ def format_scientific(x):
     return f"{coefficient:.2f}e{exponent}"
 
 
+def _get_cmap(name: str, loaded_cmaps: dict[str, str] | None = None) -> Colormap:
+    """
+    Return a matplotlib colormap, optionally loading from image.
+    Uses an internal global cache for performance.
+    """
+    global _CMAP_CACHE
+
+    if name in _CMAP_CACHE:
+        return _CMAP_CACHE[name]
+
+    # Load from image if provided
+    if loaded_cmaps and name in loaded_cmaps:
+        path = loaded_cmaps[name]
+        img = Image.open(path).convert("RGB")
+        data = np.asarray(img) / 255.0
+        center_row = data[data.shape[0] // 2, :, :]
+        n_colors = center_row.shape[0]
+        colors = [tuple(center_row[i]) for i in range(n_colors)]
+        cmap = LinearSegmentedColormap.from_list(name, colors, N=n_colors)
+    else:
+        # fallback to standard matplotlib colormap
+        cmap = plt.get_cmap(name)  # type: ignore[assignment]
+
+    # Store in cache
+    _CMAP_CACHE[name] = cmap
+    return cmap
+
+
 def generate_colorbar_image(
-    colorbar_height: int, colorbar_width: int, cmap: str, c_min: float, c_max: float, method: str = "identity"
+    colorbar_height: int,
+    colorbar_width: int,
+    cmap: str,
+    c_min: float,
+    c_max: float,
+    method: str = "identity",
+    loaded_cmaps: dict[str, str] | None = None,
 ) -> np.ndarray:
     """
     Generate a colorbar image as a numpy array with different labeling methods.
@@ -122,7 +159,7 @@ def generate_colorbar_image(
         method: Display method for the colorbar values. Options:
             - "identity": Regular values (default)
             - "log_e": Label as e^value
-            - "log_10": Label as aa.bbec format where c is an integer
+        loaded_cmaps: An optional dict containing {name: cmap path}
 
     Returns:
         Numpy array of the colorbar image with values in [0, 1]
@@ -143,11 +180,14 @@ def generate_colorbar_image(
     bar_start_y = text_padding
     bar_end_y = h - text_padding
     bar_height = bar_end_y - bar_start_y
-    colormap = plt.get_cmap(cmap)
+
+    # --- get colormap ---
+    colormap = _get_cmap(cmap, loaded_cmaps)
     gradient = np.linspace(1, 0, bar_height)
     bar_colors_rgba = colormap(gradient)
     bar_colors_rgb = (bar_colors_rgba[:, :3] * 255).astype(np.uint8)
 
+    # --- draw vertical bar ---
     for i in range(bar_height):
         y_pos = bar_start_y + i
         draw.line(
@@ -155,6 +195,7 @@ def generate_colorbar_image(
             fill=tuple(bar_colors_rgb[i]),
         )
 
+    # --- ticks and labels ---
     num_ticks = 7
     tick_values = np.linspace(c_max, c_min, num_ticks)
     tick_positions = np.linspace(bar_start_y, bar_end_y, num_ticks)
@@ -171,11 +212,9 @@ def generate_colorbar_image(
         # method_label = "Log10 Scale"
         formatter = format_scientific
     else:
-        raise ValueError(f"Unsupported method: {method}. Use 'identity', 'log_e', or 'log_10'")
+        raise ValueError(f"Unsupported method: {method}. Use 'identity' or 'log_e'")
 
-    # # Add method label
-    # draw.text((bar_x_pos, 5), method_label, fill="black", font=font)
-
+    # draw tick marks and text
     for i, (val, pos) in enumerate(zip(tick_values, tick_positions, strict=False)):
         if i == 0:
             label = f">= {formatter(val)}"
