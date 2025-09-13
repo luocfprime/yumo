@@ -1,14 +1,16 @@
+import hashlib
 import logging
 
 import cv2
 import numpy as np
 import xatlas
 from scipy.ndimage import distance_transform_edt, gaussian_filter
-from scipy.spatial import KDTree
+from scipy.spatial import cKDTree
 
 from yumo.utils import profiler
 
 logger = logging.getLogger(__name__)
+_tree_cache = {}
 
 
 def unwrap_uv(
@@ -217,22 +219,34 @@ def map_to_uv(
     return sample_uvs  # type: ignore[no-any-return]
 
 
+def get_tree(data_points: np.ndarray):
+    key = hashlib.sha256(data_points.view(np.uint8)).hexdigest()
+    if key not in _tree_cache:
+        _tree_cache[key] = cKDTree(data_points[:, :3])
+    return _tree_cache[key]
+
+
+def clear_tree_cache():
+    _tree_cache.clear()
+
+
 @profiler(profiler_logger=logger)
-def query_scalar_field(points_coord: np.ndarray, data_points: np.ndarray) -> np.ndarray:
+def query_scalar_field(points_coord: np.ndarray, data_points: np.ndarray, cache: bool = True) -> np.ndarray:
     """
     Query scalar field f(x,y,z) in vectorized form.
 
     Args:
         points_coord (np.ndarray): (L, 3).
         data_points (np.ndarray): (data_len, 4) xyz,value
+        cache (bool): Enable cache for cKDTree construction.
 
     Returns:
         values (np.ndarray): (L,).
     """
-    kdtree = KDTree(data_points[:, :3])
-    _, nearest_indices = kdtree.query(
-        points_coord, k=1
-    )  # TODO: check if one should consider the pruned zero-value points. For example, if the nearest point is zero-value (and pruned), this func may look for the next non-zero nearest value, which is not intended.
+    kdtree = get_tree(data_points) if cache else cKDTree(data_points[:, :3])
+
+    _, nearest_indices = kdtree.query(points_coord, k=1)
+
     interpolated_values = data_points[nearest_indices, 3]
     return interpolated_values  # type: ignore[no-any-return]
 
