@@ -21,7 +21,7 @@ class Context:
     bbox_min: np.ndarray = None  # type: ignore[assignment]
     bbox_max: np.ndarray = None  # type: ignore[assignment]
 
-    points_densest_distance: float = None  # type: ignore[assignment]
+    points_densest_distance: np.float64 = None  # type: ignore[assignment]
 
     # Settings
     cmap: str = CMAPS[0]
