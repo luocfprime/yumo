@@ -22,7 +22,8 @@ class PointCloudStructure(Structure):
         self.points = points
 
         # initialize threshold at top 10% of scalar values
-        self.visualize_threshold = float(np.percentile(points[:, 3], 90))
+        self.visualize_threshold_min = float(np.percentile(points[:, 3], 90))
+        self.visualize_threshold_max = points[:, 3].max()
 
         # 10% of the densest point distance
         self._points_radius = 0.1 * self.app_context.points_densest_distance
@@ -39,7 +40,9 @@ class PointCloudStructure(Structure):
         """Filter points above threshold."""
         if not self.is_valid():
             return np.empty((0, 4))
-        return self.points[self.points[:, 3] >= self.visualize_threshold]
+        return self.points[
+            (self.points[:, 3] >= self.visualize_threshold_min) & (self.points[:, 3] <= self.visualize_threshold_max)
+        ]
 
     def prepare_quantities(self):
         """Prepare scalar data only for filtered points."""
@@ -51,7 +54,9 @@ class PointCloudStructure(Structure):
 
     def _do_register(self):
         """Register only the point cloud geometry (XYZ coordinates)."""
-        logger.debug(f"Registering point cloud geometry (threshold={self.visualize_threshold:.3f}): '{self.name}'")
+        logger.debug(
+            f"Registering point cloud geometry (threshold [{self.visualize_threshold_min:.3f}, {self.visualize_threshold_max:.3f}]): '{self.name}'"
+        )
 
         filtered = self.get_filtered_points()
         if filtered.shape[0] == 0:
@@ -85,53 +90,74 @@ class PointCloudStructure(Structure):
             if not expanded:
                 return
 
-            with ui_item_width(100):
-                changed, show = psim.Checkbox("Show", self.enabled)
-                if changed:
-                    self.set_enabled(show)
+            self._draw_basic_controls()
 
-                psim.SameLine()
-
-                changed, radius = psim.SliderFloat(
-                    "Radius",
-                    self._points_radius,
-                    v_min=self.app_context.points_densest_distance * 0.01,
-                    v_max=self.app_context.points_densest_distance * 0.20,
-                    format="%.4g",
-                )
-                if changed:
-                    self._points_radius = radius
-                    self.set_radius(radius)
-
-                psim.SameLine()
-
-                with ui_combo("Render Mode", self._points_render_mode) as expanded:
-                    if expanded:
-                        for mode in ["sphere", "quad"]:
-                            selected, _ = psim.Selectable(mode, mode == self._points_render_mode)
-                            if selected and mode != self._points_render_mode:
-                                self._points_render_mode = mode
-                                self.set_point_render_mode(mode)
-
-            # --- Threshold control ---
             if self.is_valid():
-                q_values = self.points[:, 3]
-                min_val, max_val = float(q_values.min()), float(q_values.max())
+                self._draw_threshold_controls()
 
-                changed, new_thresh = psim.DragFloat(
-                    "Threshold",
-                    self.visualize_threshold,
-                    v_speed=(max_val - min_val) / 10000.0,
-                    v_min=min_val,
-                    v_max=max_val,
-                    format="%.4g",
-                )
-                if changed:
-                    self.visualize_threshold = new_thresh
-                    self.register(force=True)  # re-register structure + scalar quantities
-                    self.update_all_quantities_colormap()
+            psim.Separator()
 
-        psim.Separator()
+    def _draw_basic_controls(self):
+        with ui_item_width(100):
+            thresh_min_changed, show = psim.Checkbox("Show", self.enabled)
+            if thresh_min_changed:
+                self.set_enabled(show)
+
+            psim.SameLine()
+
+            radius_changed, radius = psim.SliderFloat(
+                "Radius",
+                self._points_radius,
+                v_min=self.app_context.points_densest_distance * 0.01,
+                v_max=self.app_context.points_densest_distance * 0.20,
+                format="%.4g",
+            )
+            if radius_changed:
+                self._points_radius = radius
+                self.set_radius(radius)
+
+            psim.SameLine()
+
+            with ui_combo("Render Mode", self._points_render_mode) as expanded:
+                if expanded:
+                    for mode in ["sphere", "quad"]:
+                        selected, _ = psim.Selectable(mode, mode == self._points_render_mode)
+                        if selected and mode != self._points_render_mode:
+                            self._points_render_mode = mode
+                            self.set_point_render_mode(mode)
+
+    def _draw_threshold_controls(self):
+        with ui_item_width(100):
+            q_values = self.points[:, 3]
+            min_val, max_val = float(q_values.min()), float(q_values.max())
+
+            min_changed, new_min = psim.DragFloat(
+                "Threshold Min",
+                self.visualize_threshold_min,
+                v_speed=(max_val - min_val) / 10000.0,
+                v_min=min_val,
+                v_max=self.visualize_threshold_max,
+                format="%.4g",
+            )
+            if min_changed:
+                self.visualize_threshold_min = new_min
+
+            psim.SameLine()
+
+            max_changed, new_max = psim.DragFloat(
+                "Threshold Max",
+                self.visualize_threshold_max,
+                v_speed=(max_val - min_val) / 10000.0,
+                v_min=self.visualize_threshold_min,
+                v_max=max_val,
+                format="%.4g",
+            )
+            if max_changed:
+                self.visualize_threshold_max = new_max
+
+            if min_changed or max_changed:
+                self.register(force=True)
+                self.update_all_quantities_colormap()
 
     def callback(self):
         pass
