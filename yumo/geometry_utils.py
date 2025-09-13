@@ -354,8 +354,7 @@ def blur(
             Can be 2D (H, W) or 3D (H, W, C).
         sigma (float, optional): Standard deviation of the Gaussian kernel. Defaults to 1.0.
         mask (np.ndarray): (0) Padding (1) Islands.
-        **kwargs: Additional keyword arguments passed to
-            `scipy.ndimage.gaussian_filter`.
+        **kwargs: Useless. For compatibility only.
 
     Returns:
         np.ndarray: Blurred texture with padding ignored. Same shape as input.
@@ -365,8 +364,8 @@ def blur(
     zeros_mask = zeros_mask.astype(np.float64)
 
     # Apply Gaussian filter
-    blurred_tex = gaussian_filter(texture.astype(np.float64), sigma=sigma, **kwargs)
-    blurred_mask = gaussian_filter(zeros_mask.astype(np.float64), sigma=sigma, **kwargs)
+    blurred_tex = gaussian_filter(texture.astype(np.float64), sigma=sigma)
+    blurred_mask = gaussian_filter(zeros_mask.astype(np.float64), sigma=sigma)
 
     # Normalize
     eps = 1e-8
