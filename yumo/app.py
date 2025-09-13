@@ -376,6 +376,7 @@ class PolyscopeApp:
         ps.set_print_prefix("[Yumo][Polyscope] ")
         ps.set_ground_plane_mode("shadow_only")
         ps.set_up_dir("z_up")
+        ps.set_front_dir("x_front")
 
         ps.init()
 
