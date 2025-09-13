@@ -235,7 +235,7 @@ class PolyscopeApp:
         logger.debug(msg)
         self._picker_msgs.append(msg)
 
-        return float(texture_value)
+        return np.float64(texture_value)
 
     def _ui_colorbar_controls(self):
         """Colorbar controls UI"""

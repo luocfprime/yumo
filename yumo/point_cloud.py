@@ -22,7 +22,7 @@ class PointCloudStructure(Structure):
         self.points = points
 
         # initialize threshold at top 10% of scalar values
-        self.visualize_threshold_min = float(np.percentile(points[:, 3], 90))
+        self.visualize_threshold_min = np.float64(np.percentile(points[:, 3], 90))
         self.visualize_threshold_max = points[:, 3].max()
 
         # 10% of the densest point distance
@@ -129,7 +129,7 @@ class PointCloudStructure(Structure):
     def _draw_threshold_controls(self):
         with ui_item_width(100):
             q_values = self.points[:, 3]
-            min_val, max_val = float(q_values.min()), float(q_values.max())
+            min_val, max_val = np.float64(q_values.min()), np.float64(q_values.max())
 
             min_changed, new_min = psim.DragFloat(
                 "Threshold Min",

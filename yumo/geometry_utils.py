@@ -95,7 +95,7 @@ def uv_mask(
     hi_h = texture_height * supersample
 
     # Convert UVs to high-res pixel coords
-    uv_pixels = np.zeros_like(uvs, dtype=np.float32)
+    uv_pixels = np.zeros_like(uvs, dtype=np.float64)
     uv_pixels[:, 0] = uvs[:, 0] * (hi_w - 1)
     uv_pixels[:, 1] = (1.0 - uvs[:, 1]) * (hi_h - 1)  # flip Y
 
@@ -111,14 +111,14 @@ def uv_mask(
     mask = cv2.resize(hi_mask, (texture_width, texture_height), interpolation=cv2.INTER_AREA)
 
     # Normalize to [0,1] float mask (soft edges preserved)
-    mask = mask.astype(np.float32) / 255.0
+    mask = mask.astype(np.float64) / 255.0
 
     # Optional dilation to pad seams (applied on final resolution)
     if dilation > 0:
         kernel = np.ones((dilation, dilation), np.uint8)
         hard_mask = (mask > 0).astype(np.uint8) * 255
         dilated = cv2.dilate(hard_mask, kernel, iterations=1)
-        mask = np.maximum(mask, dilated.astype(np.float32) / 255.0)
+        mask = np.maximum(mask, dilated.astype(np.float64) / 255.0)
 
     return mask
 
@@ -364,11 +364,11 @@ def blur(
     """
     # Build binary mask
     zeros_mask = texture > 0  # we don't & mask here, as holes inside islands must be normalized too
-    zeros_mask = zeros_mask.astype(np.float32)
+    zeros_mask = zeros_mask.astype(np.float64)
 
     # Apply Gaussian filter
-    blurred_tex = gaussian_filter(texture.astype(np.float32), sigma=sigma, **kwargs)
-    blurred_mask = gaussian_filter(zeros_mask.astype(np.float32), sigma=sigma, **kwargs)
+    blurred_tex = gaussian_filter(texture.astype(np.float64), sigma=sigma, **kwargs)
+    blurred_mask = gaussian_filter(zeros_mask.astype(np.float64), sigma=sigma, **kwargs)
 
     # Normalize
     eps = 1e-8

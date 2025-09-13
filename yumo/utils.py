@@ -65,7 +65,7 @@ def parse_plt_file(file_path: str | Path, skip_zeros: bool = False) -> np.ndarra
         if not match:
             continue
 
-        x, y, z, value = map(float, match.groups())
+        x, y, z, value = map(np.float64, match.groups())
         if skip_zeros and value == 0.0:
             continue
 
@@ -230,7 +230,7 @@ def estimate_densest_point_distance(points: np.ndarray, k: int = 1000, quantile:
     else:
         filtered_distances = nearest_distances
 
-    return float(np.mean(filtered_distances))
+    return np.float64(np.mean(filtered_distances))
 
 
 def data_transform(points: np.ndarray, method: str) -> np.ndarray:
