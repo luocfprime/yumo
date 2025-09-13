@@ -1,3 +1,4 @@
+import datetime
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,9 +19,11 @@ from yumo.ui import ui_combo, ui_item_width, ui_tree_node
 from yumo.utils import (
     data_transform,
     estimate_densest_point_distance,
+    export_camera_view,
     fmt2,
     fmt3,
     generate_colorbar_image,
+    load_camera_view,
     load_mesh,
     parse_plt_file,
 )
@@ -33,6 +36,7 @@ logger = logging.getLogger(__name__)
 class Config:
     data_path: Path
     mesh_path: Path | None
+    camera_view_path: Path | None
     sample_rate: float
     skip_zeros: bool
     data_preprocess_method: str
@@ -46,6 +50,8 @@ class PolyscopeApp:
         self.slices = Slices("slices", self.context)
         self.structures: dict[str, Structure] = {}
         self._should_init_quantities = True
+
+        self._view_controls_msgs: str = ""
 
         self._picker_should_query_field = False
         self._picker_msgs: list[str] = []
@@ -136,6 +142,23 @@ class PolyscopeApp:
             )
 
         psim.Separator()
+
+    def _ui_view_controls(self):
+        with ui_tree_node("View Controls", open_first_time=False) as expanded:
+            if not expanded:
+                return
+
+            if psim.Button("Export Camera View"):
+                view_mat = ps.get_camera_view_matrix()
+                camera_view_file = Path(datetime.datetime.now().strftime("%Y%m%d_%H%M%S_cam_view.json"))
+                with open(camera_view_file, "w") as f:
+                    f.write(export_camera_view(view_mat))
+
+                msg = f"Camera view exported to \n{camera_view_file.absolute()}"
+                logger.info(msg)
+                self._view_controls_msgs = msg
+
+            psim.Text(self._view_controls_msgs)
 
     def _ui_coord_picker(self):
         with ui_tree_node("Coord Picker", open_first_time=False) as expanded:
@@ -337,6 +360,7 @@ class PolyscopeApp:
 
         # Build the UI
         self._ui_top_text_brief()
+        self._ui_view_controls()
         self._ui_colorbar_controls()
         self._ui_colorbar_display()
         self._ui_coord_picker()
@@ -353,5 +377,14 @@ class PolyscopeApp:
         ps.set_ground_plane_mode("shadow_only")
 
         ps.init()
+
+        if self.config.camera_view_path:
+            logger.info(f"Loading initial camera view from: {self.config.camera_view_path}")
+            with open(self.config.camera_view_path) as f:
+                lines = f.readlines()
+            json_str = "".join(lines)
+            view_mat = load_camera_view(json_str)
+            ps.set_camera_view_matrix(view_mat)
+
         ps.set_user_callback(self.callback)
         ps.show()

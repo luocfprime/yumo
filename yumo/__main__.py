@@ -128,6 +128,16 @@ def viz(
         "--prep",
         help=f"Method to preprocess data. One of {DATA_PREPROCESS_METHODS}",
     ),
+    camera_view: Path | None = typer.Option(
+        None,
+        "--camera-view",
+        "--cam",
+        help="Path to camera view json file",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
     skip_zeros: bool = typer.Option(
         False,
         help="Skip loading points with values = 0.0",
@@ -149,6 +159,7 @@ def viz(
             sample_rate=sample_rate,
             skip_zeros=skip_zeros,
             data_preprocess_method=preprocess_method,
+            camera_view_path=camera_view,
         )
     ).run()
 

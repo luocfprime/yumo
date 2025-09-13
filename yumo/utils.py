@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import time
@@ -296,3 +297,40 @@ def fmt2(vec: np.ndarray | list[float] | tuple[float, float], precision: int = 2
 
 def fmt3(vec: np.ndarray | list[float] | tuple[float, float, float], precision: int = 2) -> str:
     return fmtn(vec, 3, precision)
+
+
+def export_camera_view(view_mat: np.ndarray) -> str:
+    """
+    Export a 4x4 camera view matrix to a JSON string (list of lists).
+
+    Args:
+        view_mat (np.ndarray): A 4x4 numpy matrix.
+
+    Returns:
+        str: JSON-formatted string representing the matrix.
+    """
+    if view_mat.shape != (4, 4):
+        raise ValueError(f"Expected (4,4) matrix, got {view_mat.shape}")
+
+    # Convert numpy array to nested list
+    mat_list = view_mat.tolist()
+    return json.dumps(mat_list)
+
+
+def load_camera_view(json_str: str) -> np.ndarray:
+    """
+    Load a 4x4 camera view matrix from a JSON string.
+
+    Args:
+        json_str (str): JSON string representing the matrix.
+
+    Returns:
+        np.ndarray: A 4x4 numpy matrix.
+    """
+    mat_list = json.loads(json_str)
+    mat = np.array(mat_list, dtype=float)
+
+    if mat.shape != (4, 4):
+        raise ValueError(f"Expected (4,4) matrix, got {mat.shape}")
+
+    return mat
