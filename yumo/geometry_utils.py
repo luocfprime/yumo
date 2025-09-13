@@ -287,6 +287,17 @@ def nearest_fill(
     mask: np.ndarray = None,  # type: ignore[assignment]
     **kwargs,
 ):  # kwargs for compatibility
+    """
+
+    Args:
+        texture:
+        max_dist:
+        mask: (0) Padding (1) Islands.
+        **kwargs:
+
+    Returns:
+
+    """
     # mask: 1 for missing (0), 0 for valid
     zeros_mask = texture == 0
     if mask is not None:
@@ -308,16 +319,24 @@ def nearest_and_blur(
     mask: np.ndarray = None,  # type: ignore[assignment]
     **kwargs,
 ) -> np.ndarray:  # max dist should be smaller than the padding in unwrap_uv
-    zeros_mask = texture > 0
-    if mask is not None:
-        zeros_mask = zeros_mask & mask.astype(bool)  # only fill islands
+    """
 
-    dist, idxs = distance_transform_edt(~zeros_mask, return_indices=True)
-    nearest = texture[tuple(idxs)]
-    nearest[dist > max_dist] = 0  # drop far-away fills
+    Args:
+        texture:
+        blur_sigma:
+        max_dist:
+        mask: (0) Padding (1) Islands.
+        **kwargs:
 
-    smoothed: np.ndarray = blur(nearest, mask=mask, sigma=blur_sigma)  # use mask to compensate normalized conv
-    return smoothed
+    Returns:
+
+    """
+    return blur(
+        nearest_fill(texture, max_dist=max_dist, mask=mask, **kwargs),
+        sigma=blur_sigma,
+        mask=mask,
+        **kwargs,
+    )
 
 
 def blur(
@@ -344,11 +363,12 @@ def blur(
         np.ndarray: Blurred texture with padding ignored. Same shape as input.
     """
     # Build binary mask
-    mask = (texture > 0).astype(np.float32) if mask is None else mask
+    zeros_mask = texture > 0  # we don't & mask here, as holes inside islands must be normalized too
+    zeros_mask = zeros_mask.astype(np.float32)
 
     # Apply Gaussian filter
     blurred_tex = gaussian_filter(texture.astype(np.float32), sigma=sigma, **kwargs)
-    blurred_mask = gaussian_filter(mask.astype(np.float32), sigma=sigma, **kwargs)
+    blurred_mask = gaussian_filter(zeros_mask.astype(np.float32), sigma=sigma, **kwargs)
 
     # Normalize
     eps = 1e-8
