@@ -363,7 +363,7 @@ def blur(
         np.ndarray: Blurred texture with padding ignored. Same shape as input.
     """
     # Build binary mask
-    zeros_mask = texture > 0  # we don't & mask here, as holes inside islands must be normalized too
+    zeros_mask = texture != 0  # we don't & mask here, as holes inside islands must be normalized too
     zeros_mask = zeros_mask.astype(np.float64)
 
     # Apply Gaussian filter
