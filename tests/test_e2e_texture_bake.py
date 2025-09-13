@@ -8,25 +8,18 @@ from PIL import Image, ImageChops
 from yumo.geometry_utils import bake_to_texture, map_to_uv, sample_surface, unwrap_uv
 from yumo.utils import load_mesh
 
-pytestmark = pytest.mark.skipif(
-    platform.system() != "Darwin",
-    reason="Golden standards are only available on macOS (for now, where this is mainly developed).",
-)
 
-
-def test_e2e_texture_bake(test_data, tmp_path):
+def test_e2e_texture_bake(test_data, tmp_path, refresh_golden):
     """
     End-to-end test of texture baking.
 
-    Steps:
-    1. Load a mesh model from test_data/sample.STL
-    2. Perform UV unwrapping via xatlas
-    3. Sample surface points with sample_surface
-    4. Map sampled points to UV space
-    5. Bake scalar values (all ones) into a texture map
-    6. Save the baked texture image to disk
-    7. Compare against golden reference image pixel-by-pixel
+    Golden standard files are system-specific. Expected filenames:
+      texture_bake_<System>_gt.png
+      texture_bake_<System>_gt.npy
     """
+
+    system = platform.system()  # e.g. "Darwin", "Linux", "Windows"
+
     # -- 1. Load mesh from STL file --
     mesh_path = os.path.join(test_data, "sample.STL")
     vertices, faces = load_mesh(mesh_path)
@@ -40,7 +33,7 @@ def test_e2e_texture_bake(test_data, tmp_path):
         faces_unwrapped,
         uvs,
         vertices_unwrapped,
-    ) = unwrap_uv(vertices, faces, brute_force=True)  # set to True for deterministic results
+    ) = unwrap_uv(vertices, faces, brute_force=True)
 
     # -- 3. Sample surface --
     rng = np.random.default_rng(42)
@@ -55,34 +48,45 @@ def test_e2e_texture_bake(test_data, tmp_path):
     # -- 6. Bake to texture --
     tex = bake_to_texture(sample_uvs, values, H, W)
 
-    np.save(tmp_path / "texture_bake.npy", tex)
+    # Always save to tmp_path for debugging
+    out_npy = tmp_path / "texture_bake.npy"
+    out_png = tmp_path / "texture_bake.png"
+    np.save(out_npy, tex)
 
-    # Scale and convert to image
     tex_norm = (tex / tex.max() * 255).astype(np.uint8)
     img = Image.fromarray(tex_norm)
+    img.save(out_png)
 
-    # Save image for debug
-    out_file = tmp_path / "texture_bake.png"
-    img.save(out_file)
+    # Compute golden file names
+    gt_png = os.path.join(test_data, f"texture_bake_{system}_gt.png")
+    gt_npy = os.path.join(test_data, f"texture_bake_{system}_gt.npy")
 
-    # -- 7. Compare against golden reference --
+    if refresh_golden:
+        # Overwrite system-specific goldens
+        img.save(gt_png)
+        np.save(gt_npy, tex)
+        pytest.skip("Golden standards refreshed, skipping comparison.")
 
-    gt_file = os.path.join(test_data, "texture_bake_gt.png")
-    gt_img = Image.open(gt_file).convert("L")
+    # If no goldens for this system, skip
+    if not (os.path.exists(gt_png) and os.path.exists(gt_npy)):
+        pytest.skip(f"No golden standards available for system {system}")
 
-    assert img.size == gt_img.size, "Baked texture size mismatch"
+    # --- Compare PNG golden ---
+    gt_img = Image.open(gt_png).convert("L")
+    assert img.size == gt_img.size, f"Texture size mismatch: got {img.size}, expected {gt_img.size}"
 
     diff = ImageChops.difference(img, gt_img)
     if diff.getbbox() is not None:
-        diff_file = tmp_path / "diff.png"
+        diff_file = tmp_path / "texture_bake_diff.png"
         diff.save(diff_file)
-        raise AssertionError(
-            f"Texture bake result does not match golden reference.\n"
-            f"Generated: {out_file}\n"
-            f"Diff: {diff_file}\n"
-            f"Expected: {gt_file}"
-        )
+        raise AssertionError(f"PNG mismatch.\nGenerated: {out_png}\nDiff: {diff_file}\nExpected: {gt_png}")
 
-    # Also make sure the npy matches the golden reference
-    gt_tex = np.load(os.path.join(test_data, "texture_bake_gt.npy"))
-    assert np.allclose(tex, gt_tex, atol=1e-6), "Baked texture does not match golden reference"
+    # --- Compare NPY golden ---
+    gt_tex = np.load(gt_npy)
+    assert tex.shape == gt_tex.shape, f"Array shape mismatch: got {tex.shape}, expected {gt_tex.shape}"
+
+    if not np.allclose(tex, gt_tex, atol=1e-6):
+        diff_arr = tex - gt_tex
+        diff_file = tmp_path / "texture_bake_diff.npy"
+        np.save(diff_file, diff_arr)
+        raise AssertionError(f"NPY mismatch.\nGenerated: {out_npy}\nDiff array: {diff_file}\nExpected: {gt_npy}")

@@ -22,3 +22,5 @@
 *.avi binary
 *.wmv binary
 *.mkv binary
+
+*.npy binary
