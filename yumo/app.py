@@ -90,7 +90,7 @@ class PolyscopeApp:
         self.context.color_max = self.context.max_value
 
         # 3. Instantiate structures
-        self.structures["points"] = PointCloudStructure("points", self.context, self.context.points, enabled=True)
+        self.structures["points"] = PointCloudStructure("points", self.context, self.context.points, enabled=False)
 
         if self.context.mesh_vertices is not None and self.context.mesh_faces is not None:
             self.structures["mesh"] = MeshStructure(
