@@ -122,8 +122,6 @@ You can collapse and expand the menu to turn off and on this feature. It is off 
 
 When Query Field is checked, clicking on any non-empty position on the screen will use **nearest neighbor search** to get the point cloud data point corresponding to the clicked coordinates.
 
-Note ⚠️: When Query Field is enabled, there might be a momentary lag due to the initial point cloud query, making dragging temporarily difficult.
-
 When clicking on the mesh surface, Coord Picker will additionally query the surface field strength value recorded in the texture data through UV coordinates.
 When Query Field is also enabled, it will calculate the relative error between the queried texture record field strength value and the point cloud queried field strength value: e = |f_texture - f_pointcloud| / |f_pointcloud|.
 

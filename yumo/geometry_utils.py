@@ -281,11 +281,18 @@ def bake_to_texture(
     return tex_sum
 
 
-def nearest_fill(texture, max_dist=16, **kwargs):  # kwargs for compatibility
+def nearest_fill(
+    texture,
+    max_dist=16,
+    mask: np.ndarray = None,  # type: ignore[assignment]
+    **kwargs,
+):  # kwargs for compatibility
     # mask: 1 for missing (0), 0 for valid
-    mask = texture == 0
+    zeros_mask = texture == 0
+    if mask is not None:
+        zeros_mask = zeros_mask & mask.astype(bool)  # only fill islands
 
-    dist, indices = distance_transform_edt(mask, return_indices=True)
+    dist, indices = distance_transform_edt(zeros_mask, return_indices=True)
 
     # Fill with nearest value
     filled = texture[tuple(indices)]
@@ -295,19 +302,62 @@ def nearest_fill(texture, max_dist=16, **kwargs):  # kwargs for compatibility
 
 
 def nearest_and_blur(
-    texture, blur_sigma=1.0, max_dist=16, **kwargs
+    texture,
+    blur_sigma=1.0,
+    max_dist=16,
+    mask: np.ndarray = None,  # type: ignore[assignment]
+    **kwargs,
 ) -> np.ndarray:  # max dist should be smaller than the padding in unwrap_uv
-    mask = texture > 0
-    dist, idxs = distance_transform_edt(~mask, return_indices=True)
+    zeros_mask = texture > 0
+    if mask is not None:
+        zeros_mask = zeros_mask & mask.astype(bool)  # only fill islands
+
+    dist, idxs = distance_transform_edt(~zeros_mask, return_indices=True)
     nearest = texture[tuple(idxs)]
     nearest[dist > max_dist] = 0  # drop far-away fills
 
-    smoothed: np.ndarray = gaussian_filter(nearest, sigma=blur_sigma)
+    smoothed: np.ndarray = blur(nearest, mask=mask, sigma=blur_sigma)  # use mask to compensate normalized conv
     return smoothed
 
 
-def blur(texture, sigma=1.0, **kwargs):
-    return gaussian_filter(texture, sigma=sigma)
+def blur(
+    texture: np.ndarray,
+    sigma: float = 1.0,
+    mask: np.ndarray = None,  # type: ignore[assignment]
+    **kwargs,
+) -> np.ndarray:
+    """Apply Gaussian blur to a texture while ignoring zero-padding.
+
+    This function performs a mask-aware Gaussian filter: both the texture
+    and a binary mask are smoothed, and then the results are normalized
+    to prevent padded zeros from biasing the blur.
+
+    Args:
+        texture (np.ndarray): Input texture array. Padding regions should be zeros.
+            Can be 2D (H, W) or 3D (H, W, C).
+        sigma (float, optional): Standard deviation of the Gaussian kernel. Defaults to 1.0.
+        mask (np.ndarray): (0) Padding (1) Islands.
+        **kwargs: Additional keyword arguments passed to
+            `scipy.ndimage.gaussian_filter`.
+
+    Returns:
+        np.ndarray: Blurred texture with padding ignored. Same shape as input.
+    """
+    # Build binary mask
+    mask = (texture > 0).astype(np.float32) if mask is None else mask
+
+    # Apply Gaussian filter
+    blurred_tex = gaussian_filter(texture.astype(np.float32), sigma=sigma, **kwargs)
+    blurred_mask = gaussian_filter(mask.astype(np.float32), sigma=sigma, **kwargs)
+
+    # Normalize
+    eps = 1e-8
+    result = blurred_tex / (blurred_mask + eps)
+
+    # Set padding back to zero
+    result[mask == 0] = 0
+
+    return result  # type: ignore[no-any-return]
 
 
 @profiler(profiler_logger=logger)

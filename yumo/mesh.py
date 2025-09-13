@@ -122,6 +122,7 @@ class MeshStructure(Structure):
             )
 
         if self._enable_denoise:
+            self._denoise_kwargs["mask"] = self.uv_mask
             tex = denoise_texture(self.raw_texture, method=self._denoise_method, **self._denoise_kwargs)
         else:
             tex = self.raw_texture.copy()
