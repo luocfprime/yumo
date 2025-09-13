@@ -196,7 +196,7 @@ class PolyscopeApp:
                 if pick_result.structure_name == "mesh":
                     texture_value = self._handle_mesh_pick(pick_result)
                     if texture_value and field_value:
-                        rel_err = abs(texture_value - field_value) / field_value
+                        rel_err = abs((texture_value - field_value) / field_value)
                         msg = f"Relative error: {rel_err * 100:,.2f}%"
                         logger.debug(msg)
                         self._picker_msgs.append(msg)
