@@ -331,12 +331,10 @@ def nearest_and_blur(
     Returns:
 
     """
-    return blur(
-        nearest_fill(texture, max_dist=max_dist, mask=mask, **kwargs),
-        sigma=blur_sigma,
-        mask=mask,
-        **kwargs,
-    )
+    nn_result = nearest_fill(texture, max_dist=max_dist, mask=mask, **kwargs)
+    kwargs.pop("mask", None)
+    kwargs.pop("sigma", None)
+    return blur(nn_result, sigma=blur_sigma, mask=mask, **kwargs)
 
 
 def blur(
