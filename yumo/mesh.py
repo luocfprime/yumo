@@ -51,6 +51,8 @@ class MeshStructure(Structure):
 
         self.raw_texture: np.ndarray = None  # type: ignore[assignment]
 
+        self.inv_vmapping: np.ndarray = None  # type: ignore[assignment]
+
         self.mesh_surface_area = triangle_areas(self.vertices[self.faces]).sum()
 
         self._need_update = False
@@ -164,9 +166,6 @@ class MeshStructure(Structure):
     def _do_register(self):
         """Register only the mesh geometry."""
         logger.debug(f"Registering mesh geometry: '{self.name}'")
-        mesh = ps.register_surface_mesh(self.name, self.vertices, self.faces)
-        mesh.set_material("clay")
-        mesh.set_color([0.7, 0.7, 0.7])
 
         # add uv parameterization
         (
@@ -178,6 +177,13 @@ class MeshStructure(Structure):
             self.uvs,
             self.vertices_unwrapped,
         ) = unwrap_uv(self.vertices, self.faces)
+
+        mesh = ps.register_surface_mesh(self.name, self.vertices_unwrapped, self.faces_unwrapped)
+        mesh.set_material("clay")
+        mesh.set_color([0.7, 0.7, 0.7])
+        mesh.set_selection_mode(
+            "faces_only"
+        )  # only allow face selection (as the uv coord for face selection yields higher precision)
 
         self.uv_mask = uv_mask(
             uvs=self.uvs,

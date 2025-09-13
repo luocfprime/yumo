@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
+import einx
 import numpy as np
 import polyscope as ps
 import polyscope.imgui as psim
@@ -197,16 +198,8 @@ class PolyscopeApp:
                 barycentric_coord=barycentric_coord,
                 indices=indices,
             )
-        elif data["element_type"] == "vertex":  # ---- vertex hit
-            vert_index = data["index"]
-            uv_coords = mesh.uvs[vert_index][None, :]
-        elif data["element_type"] == "corner":  # ---- corner hit
-            corner_index = data["index"]
-            face_index = corner_index // 3
-            local_corner = corner_index % 3
-            vert_index = mesh.faces_unwrapped[face_index, local_corner]
-            uv_coords = mesh.uvs[vert_index][None, :]
         else:
+            logger.warning(f"Unknown pick result: {data}, skipping")
             return None
 
         # ---- sample texture map
@@ -216,6 +209,23 @@ class PolyscopeApp:
         u, v = uv_coords[0]
         j = int(np.clip(u * (w - 1), 0, w - 1))  # x axis
         i = int(np.clip((1.0 - v) * (h - 1), 0, h - 1))  # y axis with flip
+
+        # --- draw cross overlay for visualization (10px thick)
+        indicator = einx.rearrange("h w -> h w 3", mesh.uv_mask).copy()
+
+        thickness = 10  # pixels half-width of the line
+
+        # horizontal band (thickness in vertical axis)
+        i_min = max(i - thickness // 2, 0)
+        i_max = min(i + thickness // 2 + 1, h)
+        indicator[i_min:i_max, :, :] = [1, 0, 0]
+
+        # vertical band (thickness in horizontal axis)
+        j_min = max(j - thickness // 2, 0)
+        j_max = min(j + thickness // 2 + 1, w)
+        indicator[:, j_min:j_max, :] = [1, 0, 0]
+
+        ps.add_color_image_quantity("Picked Cross", indicator)
 
         logger.debug(f"uv: {fmt2([u, v])}, hw: {h, w}, raster index: {i, j}")
 

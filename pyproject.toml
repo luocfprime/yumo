@@ -17,6 +17,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "einx>=0.3.0",
     "matplotlib>=3.9.4",
     "numpy<2",
     "opencv-python>=4.11.0.86",
