@@ -176,7 +176,7 @@ def generate_colorbar_image(
     return np.array(img) / 255.0
 
 
-def estimate_densest_point_distance(points: np.ndarray, k: int = 1000, quantile: float = 0.01) -> float:
+def estimate_densest_point_distance(points: np.ndarray, k: int = 1000, quantile: float = 0.01) -> np.float64:
     """
     Estimate the densest distance between points and their nearest neighbors.
 
@@ -208,7 +208,7 @@ def estimate_densest_point_distance(points: np.ndarray, k: int = 1000, quantile:
 
     # Handle edge case of a single point
     if n == 1:
-        return 0.0
+        return np.float64(0.0)
 
     # Build KD-tree for efficient nearest neighbor search
     kdtree = KDTree(points)
@@ -246,7 +246,6 @@ def data_transform(points: np.ndarray, method: str) -> np.ndarray:
         np.ndarray: Preprocessed points with the same shape.
     """
     if method == "identity":
-        # No transformation
         return points
 
     elif method in ("log_e", "log_10"):
@@ -255,18 +254,20 @@ def data_transform(points: np.ndarray, method: str) -> np.ndarray:
         # 1. Select base
         log_fn = np.log if method == "log_e" else np.log10
 
-        # 2. Apply log to positive values only
+        # 2. Mask positive values
         nonzero_mask = transformed[:, 3] > 0
-        transformed[nonzero_mask, 3] = log_fn(transformed[nonzero_mask, 3])
 
-        # 3. Find min value among transformed positives
-        if np.any(nonzero_mask):
-            min_value = np.min(transformed[nonzero_mask, 3])
-        else:
+        if not np.any(nonzero_mask):
             raise ValueError(f"No positive values found for {method} transform.")
 
-        # 4. Replace non-positive values with min_value
-        transformed[transformed[:, 3] <= 0, 3] = min_value
+        # 3. Apply log only to positive entries
+        transformed[nonzero_mask, 3] = log_fn(transformed[nonzero_mask, 3])
+
+        # 4. Find min among transformed positives
+        min_value = np.min(transformed[nonzero_mask, 3])
+
+        # 5. Replace originally non-positive values with min_value
+        transformed[~nonzero_mask, 3] = min_value
 
         return transformed
 
