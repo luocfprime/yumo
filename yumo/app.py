@@ -148,6 +148,16 @@ class PolyscopeApp:
             if not expanded:
                 return
 
+            if psim.Button("Reset Camera View"):
+                if self.context.default_view_mat is None:
+                    msg = "Default camera view matrix is not set. Please set it first."
+                    logger.warning(msg)
+                    ps.warning(msg)
+                else:
+                    ps.set_camera_view_matrix(self.context.default_view_mat)
+
+            psim.SameLine()
+
             if psim.Button("Export Camera View"):
                 view_mat = ps.get_camera_view_matrix()
                 camera_view_file = Path(datetime.datetime.now().strftime("%Y%m%d_%H%M%S_cam_view.json"))
@@ -161,7 +171,7 @@ class PolyscopeApp:
             psim.Text(self._view_controls_msgs)
 
     def _ui_coord_picker(self):
-        with ui_tree_node("Coord Picker", open_first_time=False) as expanded:
+        with ui_tree_node("Coord Picker", open_first_time=True) as expanded:
             if not expanded:
                 return
 
@@ -387,6 +397,8 @@ class PolyscopeApp:
             json_str = "".join(lines)
             view_mat = load_camera_view(json_str)
             ps.set_camera_view_matrix(view_mat)
+
+            self.context.default_view_mat = view_mat
 
         ps.set_user_callback(self.callback)
         ps.show()
