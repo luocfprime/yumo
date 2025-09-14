@@ -98,9 +98,8 @@ def write_plt_file(path: Path, points: np.ndarray):
 
 def convert_power_of_10_to_scientific(x):
     """Convert 10^x to scientific notation a*10^b where b is an integer"""
-    actual_value = 10**x
-    exponent = int(np.floor(np.log10(actual_value)))
-    coefficient = actual_value / (10**exponent)
+    exponent = int(np.floor(x))
+    coefficient = 10 ** (x - exponent)
     return coefficient, exponent
 
 
@@ -325,6 +324,37 @@ def data_transform(points: np.ndarray, method: str) -> np.ndarray:
         transformed[~nonzero_mask, 3] = min_value
 
         return transformed
+
+    else:
+        raise ValueError(f"Unknown data preprocess method: {method}")
+
+
+def inverse_data_transform(points_or_values: np.ndarray | float, method: str) -> np.ndarray | float:
+    """
+    Invert the preprocessing applied by data_transform on the last column
+    or on a single scalar value.
+
+    Args:
+        points_or_values (np.ndarray or float): Either
+            - Array of shape (N, 4) that has been transformed, or
+            - A single transformed scalar value.
+        method (str): One of {"identity", "log_e", "log_10"}.
+
+    Returns:
+        np.ndarray or float: Inverse-transformed array or scalar.
+    """
+    if method == "identity":
+        return points_or_values
+
+    elif method in ("log_e", "log_10"):
+        exp_fn = np.exp if method == "log_e" else (lambda x: np.power(10.0, x))
+
+        if np.isscalar(points_or_values) or np.ndim(points_or_values) == 0:
+            return exp_fn(points_or_values)
+
+        inv = points_or_values.copy()  # type: ignore[union-attr]
+        inv[:, 3] = exp_fn(inv[:, 3])
+        return inv
 
     else:
         raise ValueError(f"Unknown data preprocess method: {method}")

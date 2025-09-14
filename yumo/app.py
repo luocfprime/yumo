@@ -1,4 +1,5 @@
 import datetime
+import functools
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +24,7 @@ from yumo.utils import (
     fmt2,
     fmt3,
     generate_colorbar_image,
+    inverse_data_transform,
     load_camera_view,
     load_mesh,
     parse_plt_file,
@@ -214,6 +216,12 @@ class PolyscopeApp:
             if not expanded:
                 return
 
+        inv_transform = (
+            functools.partial(inverse_data_transform, method=self.context.data_preprocess_method)
+            if self.context.data_preprocess_method != "identity"
+            else None
+        )
+
         changed, query_field = psim.Checkbox("Query Field", self._picker_should_query_field)
         if changed:
             self._picker_should_query_field = query_field
@@ -238,12 +246,15 @@ class PolyscopeApp:
                 field_value = None
                 if self._picker_should_query_field:
                     field_value = query_scalar_field(world_coords, self.context.points)
+
                     msg = f"Field value: {field_value:.4g}"
+                    if inv_transform:
+                        msg += f" (inverse transformed: {inv_transform(field_value):.4g})"
                     logger.debug(msg)
                     self._picker_msgs.append(msg)
 
                 if pick_result.structure_name == "mesh":
-                    texture_value = self._handle_mesh_pick(pick_result)
+                    texture_value = self._handle_mesh_pick(pick_result, inv_transform=inv_transform)
                     if texture_value and field_value:
                         rel_err = abs((texture_value - field_value) / field_value)
                         msg = f"Relative error: {rel_err * 100:,.2f}%"
@@ -255,7 +266,11 @@ class PolyscopeApp:
 
         psim.Separator()
 
-    def _handle_mesh_pick(self, pick_result: ps.PickResult) -> np.float64 | None:  # type: ignore[no-any-unimported]
+    def _handle_mesh_pick(  # type: ignore[no-any-unimported]
+        self,
+        pick_result: ps.PickResult,
+        inv_transform=None,
+    ) -> np.float64 | None:
         """Handle mesh picking cases: face, vertex, corner."""
         logger.debug("Picked mesh")
         mesh: MeshStructure = self.structures["mesh"]  # type: ignore[assignment]
@@ -303,6 +318,8 @@ class PolyscopeApp:
 
         texture_value = texture_map[i, j]
         msg = f"Texture value: {texture_value:.4g}"
+        if inv_transform:
+            msg += f" (inverse transformed: {inv_transform(texture_value):.4g})"
 
         logger.debug(msg)
         self._picker_msgs.append(msg)
