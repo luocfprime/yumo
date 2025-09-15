@@ -24,6 +24,11 @@ This document outlines the minimal steps to set up a development environment, co
 
 The project uses `make` with `uv` for environment management and reproducibility. Some useful commands:
 
+- **Install pre-commit**"
+  ```bash
+  pre-commit install
+  ```
+
 - **Format code**
   ```bash
   make format
