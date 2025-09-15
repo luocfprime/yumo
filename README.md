@@ -1,7 +1,7 @@
 # yumo
 
-![Python Versions](https://img.shields.io/pypi/pyversions/yumo)
-![PyPI](https://img.shields.io/pypi/v/yumo)
+[![Python Versions](https://img.shields.io/pypi/pyversions/yumo)](https://pypi.org/project/yumo/)
+[![PyPI Version](https://img.shields.io/pypi/v/yumo)](https://pypi.org/project/yumo/)
 
 Scalar field visualization using Polyscope.
 
