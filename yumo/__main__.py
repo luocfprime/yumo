@@ -75,7 +75,7 @@ def prune(
     points = parse_plt_file(data_path, skip_zeros=False)
 
     typer.echo(f"Loading mesh from {mesh_path} ...")
-    mesh: trimesh.Trimesh = load_mesh(mesh_path, return_trimesh=True)  # type: ignore[assignment]
+    mesh: trimesh.Trimesh = load_mesh(mesh_path, return_trimesh=True)  # type: ignore[no-any-unimported]
     if not mesh.is_watertight:
         typer.echo("Mesh is not watertight, skipping.")
         return

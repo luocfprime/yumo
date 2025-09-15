@@ -43,7 +43,7 @@ class profiler(ContextDecorator):
         return wrapper
 
 
-def load_mesh(file_path: str | Path, return_trimesh: bool = False) -> trimesh.Trimesh | tuple[np.ndarray, np.ndarray]:
+def load_mesh(file_path: str | Path, return_trimesh: bool = False) -> trimesh.Trimesh | tuple[np.ndarray, np.ndarray]:  # type: ignore[no-any-unimported]
     mesh = trimesh.load_mesh(file_path)
     if return_trimesh:
         return mesh

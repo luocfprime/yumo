@@ -78,6 +78,8 @@ warn_unused_ignores = true
 show_error_codes = true
 ignore_missing_imports = true
 
+disable_error_code = ["no-any-unimported"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

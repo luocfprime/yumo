@@ -129,7 +129,7 @@ class PolyscopeApp:
 
         if self.config.mesh_path:
             logger.info(f"Loading mesh from {self.config.mesh_path}")
-            self.context.mesh_vertices, self.context.mesh_faces = load_mesh(str(self.config.mesh_path))  # type: ignore[misc]
+            self.context.mesh_vertices, self.context.mesh_faces = load_mesh(str(self.config.mesh_path))
 
         # 2. Calculate statistics and set initial context
         self.context.min_value = np.min(points[:, 3])
