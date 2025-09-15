@@ -203,10 +203,10 @@ def generate_colorbar_image(
     # Set the formatter based on method
     if method == "identity":
         # method_label = "Linear Scale"
-        formatter = lambda x: f"{x:.2f}"
+        formatter = lambda x: f"{x:.2g}"
     elif method == "log_e":
         # method_label = "Natural Log Scale"
-        formatter = lambda x: f"e^{x:.2f}"
+        formatter = lambda x: f"e^{x:.2g}"
     elif method == "log_10":
         # method_label = "Log10 Scale"
         formatter = format_scientific
