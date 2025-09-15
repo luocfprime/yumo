@@ -105,7 +105,7 @@ def uv_mask(
     # Rasterize triangles
     for face in faces_unwrapped:
         pts = uv_pixels[face].astype(np.int32).reshape((-1, 1, 2))
-        cv2.fillConvexPoly(hi_mask, pts, 255)
+        cv2.fillConvexPoly(hi_mask, pts, 255)  # type: ignore[call-overload]
 
     # Downsample back to target resolution with area interpolation
     mask = cv2.resize(hi_mask, (texture_width, texture_height), interpolation=cv2.INTER_AREA)
@@ -220,7 +220,7 @@ def map_to_uv(
 
 
 def get_tree(data_points: np.ndarray):
-    key = hashlib.sha256(data_points.view(np.uint8)).hexdigest()
+    key = hashlib.sha256(data_points.view(np.uint8)).hexdigest()  # type: ignore[arg-type]
     if key not in _tree_cache:
         _tree_cache[key] = cKDTree(data_points[:, :3])
     return _tree_cache[key]

@@ -129,7 +129,7 @@ class PolyscopeApp:
 
         if self.config.mesh_path:
             logger.info(f"Loading mesh from {self.config.mesh_path}")
-            self.context.mesh_vertices, self.context.mesh_faces = load_mesh(str(self.config.mesh_path))
+            self.context.mesh_vertices, self.context.mesh_faces = load_mesh(str(self.config.mesh_path))  # type: ignore[misc]
 
         # 2. Calculate statistics and set initial context
         self.context.min_value = np.min(points[:, 3])
@@ -237,7 +237,7 @@ class PolyscopeApp:
             logger.debug(msg)
             self._picker_msgs.append(msg)
 
-            pick_result: ps.PickResult = ps.pick(screen_coords=screen_coords)  # type: ignore[no-any-unimported]
+            pick_result: ps.PickResult = ps.pick(screen_coords=screen_coords)
 
             if pick_result.is_hit:
                 logger.debug(pick_result.structure_data)
@@ -266,7 +266,7 @@ class PolyscopeApp:
 
         psim.Separator()
 
-    def _handle_mesh_pick(  # type: ignore[no-any-unimported]
+    def _handle_mesh_pick(
         self,
         pick_result: ps.PickResult,
         inv_transform=None,

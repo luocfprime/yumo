@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class Slice(Structure):
     QUANTITY_NAME: ClassVar[str] = "slice"
 
-    def __init__(self, name: str, app_context: "Context", group: ps.Group, **kwargs):  # type: ignore[no-any-unimported]
+    def __init__(self, name: str, app_context: "Context", group: ps.Group, **kwargs):
         super().__init__(name, app_context, **kwargs)
 
         self.group = group
