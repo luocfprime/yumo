@@ -8,7 +8,7 @@ import polyscope as ps
 from polyscope import imgui as psim
 
 from yumo.base_structure import Structure
-from yumo.constants import DENOISE_METHODS
+from yumo.constants import DENOISE_METHODS, get_materials
 from yumo.context import Context
 from yumo.geometry_utils import (
     bake_to_texture,
@@ -54,6 +54,10 @@ class MeshStructure(Structure):
         self.inv_vmapping: np.ndarray = None  # type: ignore[assignment]
 
         self.mesh_surface_area = triangle_areas(self.vertices[self.faces]).sum()
+
+        materials = get_materials()
+        default = "0.70_clay_0.30_flat"
+        self._material = default if default in materials else materials[0]
 
         self._need_update = False
         self._need_rebake = True
@@ -179,7 +183,7 @@ class MeshStructure(Structure):
         ) = unwrap_uv(self.vertices, self.faces)
 
         mesh = ps.register_surface_mesh(self.name, self.vertices_unwrapped, self.faces_unwrapped)
-        mesh.set_material("clay")
+        mesh.set_material(self._material)
         mesh.set_color([0.7, 0.7, 0.7])
         mesh.set_selection_mode(
             "faces_only"
@@ -216,6 +220,16 @@ class MeshStructure(Structure):
             show_in_imgui_window=True,
             enabled=True,
         )
+
+    @ui_item_width(180)
+    def _ui_material_controls(self):
+        with ui_combo("Material", self._material) as expanded:
+            if expanded:
+                for material in get_materials():
+                    selected, _ = psim.Selectable(material, material == self._material)
+                    if selected and material != self._material:
+                        self._material = material
+                        self.polyscope_structure.set_material(material)
 
     def _ui_texture_denoise_method(self):
         """Texture denoise method selection"""
@@ -280,6 +294,8 @@ class MeshStructure(Structure):
                     self._need_update = True
                     self._need_rebake = True
                     self._display_mode = "baked"
+
+                self._ui_material_controls()
 
                 self._ui_texture_denoise_method()
 

@@ -65,7 +65,7 @@ py-modules = ["yumo"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-"yumo" = ["assets/colormaps/*.png"]
+"yumo" = ["assets/colormaps/*.png", "assets/materials/*.hdr"]
 
 [tool.mypy]
 files = [

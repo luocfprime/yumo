@@ -138,6 +138,16 @@ def viz(
         dir_okay=False,
         readable=True,
     ),
+    custom_colormaps_path: Path | None = typer.Option(
+        None,
+        "--colormap",
+        help="Path to the directory containing custom colormaps for visualization. "
+        "Only .png colormaps are supported for now. Organize colormaps as directory/<colormap_name>_colormap.png",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        readable=True,
+    ),
     custom_materials_path: Path | None = typer.Option(
         None,
         "--material",
@@ -170,6 +180,7 @@ def viz(
             skip_zeros=skip_zeros,
             data_preprocess_method=preprocess_method,
             camera_view_path=camera_view,
+            custom_colormaps_path=custom_colormaps_path,
             custom_materials_path=custom_materials_path,
         )
     ).run()

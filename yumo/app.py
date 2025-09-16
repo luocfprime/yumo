@@ -11,7 +11,7 @@ import polyscope as ps
 import polyscope.imgui as psim
 
 from yumo.base_structure import Structure
-from yumo.constants import get_cmaps, set_cmaps
+from yumo.constants import ASSETS_ROOT, get_cmaps, get_materials, set_cmaps, set_materials
 from yumo.context import Context
 from yumo.geometry_utils import map_to_uv, query_scalar_field
 from yumo.mesh import MeshStructure
@@ -40,6 +40,7 @@ class Config:
     data_path: Path
     mesh_path: Path | None
     camera_view_path: Path | None
+    custom_colormaps_path: Path | None
     custom_materials_path: Path | None
     sample_rate: float
     skip_zeros: bool
@@ -59,11 +60,17 @@ class PolyscopeApp:
 
         self.config = config
 
-        self.prepare_materials()
-
-        loaded_cmaps = self.prepare_colormaps()
-
         self.context = Context(data_preprocess_method=config.data_preprocess_method)
+
+        loaded_materials = self.prepare_materials(ASSETS_ROOT / "materials")  # extended builtin materials
+        if self.config.custom_materials_path is not None:
+            loaded_materials.update(self.prepare_materials(self.config.custom_materials_path))
+
+        loaded_cmaps = self.prepare_colormaps(ASSETS_ROOT / "colormaps")  # extended builtin colormaps
+        if self.config.custom_colormaps_path is not None:
+            loaded_cmaps.update(self.prepare_colormaps(self.config.custom_colormaps_path))
+
+        self.context.loaded_materials = list(loaded_materials)
 
         self.context.cmap = get_cmaps()[0]  # initialize default colormap with the first one
         self.context.loaded_cmaps = loaded_cmaps
@@ -80,13 +87,10 @@ class PolyscopeApp:
 
         self.prepare_data_and_init_structures()
 
-    def prepare_colormaps(self) -> dict[str, str] | None:
-        root = Path(__file__).parent
-        cmap_dir = root / "assets" / "colormaps"
-
+    def prepare_colormaps(self, cmap_dir) -> dict[str, str]:
         if not cmap_dir.exists():
             logger.warning(f"Colormap directory not found: {cmap_dir}")
-            return None
+            return {}
 
         loaded = {}
         for path in cmap_dir.glob("*_colormap.png"):
@@ -94,7 +98,7 @@ class PolyscopeApp:
             try:
                 ps.load_color_map(name, str(path))
                 loaded[name] = str(path)
-                logger.info(f"Loaded custom colormap: {name}")
+                logger.info(f"Loaded colormap: {name}")
             except Exception as e:
                 logger.warning(f"Failed to load colormap {path.name}: {e}")
 
@@ -104,17 +108,12 @@ class PolyscopeApp:
 
         return loaded
 
-    def prepare_materials(self):
-        if self.config.custom_materials_path is None:
-            logger.debug("No custom_materials_path specified, skipping material loading.")
-            return
-
-        base_path = Path(self.config.custom_materials_path)
+    def prepare_materials(self, base_path: Path) -> set[str]:
         if not base_path.exists() or not base_path.is_dir():
-            logger.error(f"Custom materials path does not exist or is not a directory: {base_path}")
-            return
+            logger.error(f"Materials path does not exist or is not a directory: {base_path}")
+            return set()
 
-        logger.info(f"Loading custom materials from directory {base_path}")
+        logger.info(f"Loading materials from directory {base_path}")
 
         # Collect potential material sets by grouping on the prefix (before last "_")
         materials = {}
@@ -140,6 +139,11 @@ class PolyscopeApp:
                 filename_base=str(filename_base),
                 filename_ext=".hdr",
             )
+
+        if materials:
+            set_materials([*materials.keys(), *get_materials()])  # prepend to builtin materials
+
+        return set(materials.keys())
 
     def prepare_data_and_init_structures(self):
         """Load data from files, create structures."""

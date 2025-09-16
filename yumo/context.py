@@ -29,6 +29,8 @@ class Context:
     color_min: float = None  # type: ignore[assignment]
     color_max: float = None  # type: ignore[assignment]
 
+    loaded_materials: list[str] | None = None
+
     default_view_mat: np.ndarray | None = None
 
     data_preprocess_method: str = DATA_PREPROCESS_METHODS[0]
