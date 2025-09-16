@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import einx
+import natsort
 import numpy as np
 import polyscope as ps
 import polyscope.imgui as psim
@@ -39,6 +40,7 @@ class Config:
     data_path: Path
     mesh_path: Path | None
     camera_view_path: Path | None
+    custom_materials_path: Path | None
     sample_rate: float
     skip_zeros: bool
     data_preprocess_method: str
@@ -57,6 +59,8 @@ class PolyscopeApp:
 
         self.config = config
 
+        self.prepare_materials()
+
         loaded_cmaps = self.prepare_colormaps()
 
         self.context = Context(data_preprocess_method=config.data_preprocess_method)
@@ -72,6 +76,7 @@ class PolyscopeApp:
 
         self._picker_should_query_field = False
         self._picker_msgs: list[str] = []
+        self._picker_msgs_padding: int = 5  # 5 lines of min padding
 
         self.prepare_data_and_init_structures()
 
@@ -98,6 +103,43 @@ class PolyscopeApp:
             set_cmaps([*loaded.keys(), *get_cmaps()])
 
         return loaded
+
+    def prepare_materials(self):
+        if self.config.custom_materials_path is None:
+            logger.debug("No custom_materials_path specified, skipping material loading.")
+            return
+
+        base_path = Path(self.config.custom_materials_path)
+        if not base_path.exists() or not base_path.is_dir():
+            logger.error(f"Custom materials path does not exist or is not a directory: {base_path}")
+            return
+
+        logger.info(f"Loading custom materials from directory {base_path}")
+
+        # Collect potential material sets by grouping on the prefix (before last "_")
+        materials = {}
+
+        paths = natsort.natsorted(base_path.glob("*"))
+
+        for file in paths:
+            stem = file.stem  # e.g. "wood_r" -> stem
+            # Cut off last part after "_"
+            if "_" not in stem:
+                logger.debug(f"Skipping unexpected filename {file.name}")
+                continue
+
+            prefix = stem.rsplit("_", 1)[0]  # "wood_r" -> "wood"
+            full_prefix_path = base_path / prefix
+            materials[prefix] = full_prefix_path
+
+        # Load each material set
+        for prefix, filename_base in materials.items():
+            logger.debug(f"Registering material '{prefix}' from base '{filename_base}'")
+            ps.load_blendable_material(
+                mat_name=prefix,
+                filename_base=str(filename_base),
+                filename_ext=".hdr",
+            )
 
     def prepare_data_and_init_structures(self):
         """Load data from files, create structures."""
@@ -238,33 +280,44 @@ class PolyscopeApp:
             self._picker_msgs.append(msg)
 
             pick_result: ps.PickResult = ps.pick(screen_coords=screen_coords)
-
             if pick_result.is_hit:
-                logger.debug(pick_result.structure_data)
-                self._picker_msgs.append(f"Picked {pick_result.structure_name}: {pick_result.structure_data}")
-
-                field_value = None
-                if self._picker_should_query_field:
-                    field_value = query_scalar_field(world_coords, self.context.points)
-
-                    msg = f"Field value: {field_value:.4g}"
-                    if inv_transform:
-                        msg += f" (inverse transformed: {inv_transform(field_value):.4g})"
-                    logger.debug(msg)
-                    self._picker_msgs.append(msg)
-
-                if pick_result.structure_name == "mesh":
-                    texture_value = self._handle_mesh_pick(pick_result, inv_transform=inv_transform)
-                    if texture_value and field_value:
-                        rel_err = abs((texture_value - field_value) / field_value)
-                        msg = f"Relative error: {rel_err * 100:,.2f}%"
-                        logger.debug(msg)
-                        self._picker_msgs.append(msg)
+                self._process_pick_result(pick_result, world_coords, inv_transform)
 
         for msg in self._picker_msgs:
             psim.Text(msg)
 
+        # Add padding to prevent UI jumping up and down
+        for _ in range(max(0, self._picker_msgs_padding - len(self._picker_msgs))):
+            psim.Text("")
+
         psim.Separator()
+
+    def _handle_query_field(self, world_coords, inv_transform) -> float | None:
+        """Query scalar field at given world coords and log the result."""
+        field_value = query_scalar_field(world_coords, self.context.points)
+        msg = f"Field value: {field_value:.4g}"
+        if inv_transform:
+            msg += f" (inverse transformed: {inv_transform(field_value):.4g})"
+        logger.debug(msg)
+        self._picker_msgs.append(msg)
+        return field_value
+
+    def _process_pick_result(self, pick_result: ps.PickResult, world_coords, inv_transform):
+        """Handle what happens after a successful pick."""
+        logger.debug(pick_result.structure_data)
+        self._picker_msgs.append(f"Picked {pick_result.structure_name}: {pick_result.structure_data}")
+
+        field_value = None
+        if self._picker_should_query_field:
+            field_value = self._handle_query_field(world_coords, inv_transform)
+
+        if pick_result.structure_name == "mesh":
+            texture_value = self._handle_mesh_pick(pick_result, inv_transform=inv_transform)
+            if texture_value is not None and field_value is not None:
+                rel_err = abs((texture_value - field_value) / field_value)
+                msg = f"Relative error: {rel_err * 100:,.2f}%"
+                logger.debug(msg)
+                self._picker_msgs.append(msg)
 
     def _handle_mesh_pick(
         self,

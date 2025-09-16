@@ -31,7 +31,7 @@ def unwrap_uv(
         - param_corner (np.ndarray): (M*3, 2) UV coords per face corner.
         - texture_height (int): Atlas height in pixels.
         - texture_width (int): Atlas width in pixels.
-        - vmapping (np.ndarray): (V,) mapping of unwrapped vertex → original vertex.
+        - vmapping (np.ndarray): (V,) mapping of unwrapped vertex -> original vertex.
         - faces_unwrapped (np.ndarray): (M, 3) face indices into unwrapped verts.
         - uvs (np.ndarray): (V, 2) UV coords ∈ [0, 1].
         - vertices_unwrapped (np.ndarray): (V, 3) unwrapped vertex positions.

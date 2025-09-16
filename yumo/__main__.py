@@ -138,6 +138,16 @@ def viz(
         dir_okay=False,
         readable=True,
     ),
+    custom_materials_path: Path | None = typer.Option(
+        None,
+        "--material",
+        help="Path to the directory containing custom materials for visualization. "
+        "Only .hdr materials are supported for now. Organize materials as directory/<material_name>_[rgbk].hdr",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        readable=True,
+    ),
     skip_zeros: bool = typer.Option(
         False,
         help="Skip loading points with values = 0.0",
@@ -160,6 +170,7 @@ def viz(
             skip_zeros=skip_zeros,
             data_preprocess_method=preprocess_method,
             camera_view_path=camera_view,
+            custom_materials_path=custom_materials_path,
         )
     ).run()
 
