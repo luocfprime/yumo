@@ -101,10 +101,11 @@ yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
 1. 勾选显示mesh。
 2. 采样率。
 3. Bake：执行采样、赋值给texture的过程。
-4. 勾选启用材质去噪。
-5. 去噪方法。
-6. （可选）最近邻的像素的最大距离。（适当调小避免UV bleeding）
-7. （可选）高斯平滑的方差。
+4. 材质选择：内置了一些flat和clay材质混合的材质。flat系数越高，光照效果越弱，与colormap越接近。
+5. 勾选启用材质去噪。
+6. 去噪方法。
+7. （可选）最近邻的像素的最大距离。（适当调小避免UV bleeding）
+8. （可选）高斯平滑的方差。
 
 !!! warning "注意"
 

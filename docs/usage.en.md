@@ -98,10 +98,11 @@ yumo viz --data xxxx.plt --mesh yyyy.STL --prep log_10
 1. Check to display the mesh.
 2. Sampling rate.
 3. Bake: Execute the process of sampling and assigning values to the texture.
-4. Check to enable texture denoising.
-5. Denoising method.
-6. (Optional) Maximum distance of the nearest neighbor pixel. (Appropriately reduce to avoid UV bleeding)
-7. (Optional) Variance of Gaussian smoothing.
+4. Material: Built-in blended texture of "flat" and "clay". The larger the flat coefficient, the lighting effect will be weaker, and the color of the mesh will be more close to the colormap (with less shadow etc.).
+5. Check to enable texture denoising.
+6. Denoising method.
+7. (Optional) Maximum distance of the nearest neighbor pixel. (Appropriately reduce to avoid UV bleeding)
+8. (Optional) Variance of Gaussian smoothing.
 
 !!! warning "Note"
 
