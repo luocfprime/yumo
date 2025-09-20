@@ -77,8 +77,8 @@ class PolyscopeApp:
 
         self._default_view_mat: np.ndarray | None = None
 
-        self.slices = Slices("slices", self.context)
-        self.structures: dict[str, Structure] = {}
+        self._colorbar_fontsize: int = 12
+
         self._should_init_quantities = True
 
         self._view_controls_msgs: str = ""
@@ -86,6 +86,9 @@ class PolyscopeApp:
         self._picker_should_query_field = False
         self._picker_msgs: list[str] = []
         self._picker_msgs_padding: int = 5  # 5 lines of min padding
+
+        self.slices = Slices("slices", self.context)
+        self.structures: dict[str, Structure] = {}
 
         self.prepare_data_and_init_structures()
 
@@ -435,6 +438,11 @@ class PolyscopeApp:
                     self.context.color_max = self.context.max_value
                     needs_update = True
 
+                changed, fontsize = psim.DragInt("Font Size", self._colorbar_fontsize, 1, 1, 100)
+                if changed:
+                    self._colorbar_fontsize = fontsize
+                    # no need for needs_update, as this only changes the font size
+
                 if needs_update:
                     self.update_all_scalar_quantities_colormap()
 
@@ -450,6 +458,7 @@ class PolyscopeApp:
             c_max=self.context.color_max,
             method=self.context.data_preprocess_method,
             loaded_cmaps=self._loaded_cmaps,
+            font_size=self._colorbar_fontsize,
         )
         ps.add_color_image_quantity(
             "colorbar",

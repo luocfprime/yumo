@@ -17,6 +17,7 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 _CMAP_CACHE: dict[str, Colormap] = {}
+_font_warning_logged: bool = False
 
 
 class profiler(ContextDecorator):
@@ -137,6 +138,46 @@ def _get_cmap(name: str, loaded_cmaps: dict[str, str] | None = None) -> Colormap
     return cmap
 
 
+def _load_font(font: str, font_size: int) -> ImageFont.FreeTypeFont:
+    """Try to load font, falling back to default."""
+    global _font_warning_logged
+    try:
+        return ImageFont.truetype(font, size=font_size)
+    except OSError:
+        if not _font_warning_logged:
+            _font_warning_logged = True
+            logger.warning(f"Could not load {font}, using default font")
+        return ImageFont.load_default()  # type: ignore[return-value]
+
+
+def _make_labels(values: np.ndarray, method: str) -> list[str]:
+    """Format tick labels according to method."""
+    if method == "identity":
+        formatter = lambda x: f"{x:.2g}"
+    elif method == "log_e":
+        formatter = lambda x: f"e^{x:.2g}"
+    elif method == "log_10":
+        formatter = format_scientific
+    else:
+        raise ValueError(f"Unsupported method: {method}")
+
+    labels = []
+    for i, val in enumerate(values):
+        if i == 0:
+            labels.append(f">= {formatter(val)}")
+        elif i == len(values) - 1:
+            labels.append(f"<= {formatter(val)}")
+        else:
+            labels.append(formatter(val))
+    return labels
+
+
+def _required_width(labels: list[str], font_obj, bar_width: int, tick_spacing: int, text_padding: int) -> int:
+    """Compute required width to fit labels."""
+    max_label_width = max(font_obj.getbbox(lbl)[2] for lbl in labels)
+    return bar_width + tick_spacing + max_label_width + 2 * text_padding
+
+
 def generate_colorbar_image(
     colorbar_height: int,
     colorbar_width: int,
@@ -145,51 +186,48 @@ def generate_colorbar_image(
     c_max: float,
     method: str = "identity",
     loaded_cmaps: dict[str, str] | None = None,
+    font: str = "Arial.ttf",
     font_size: int = 12,
 ) -> np.ndarray:
     """
     Generate a colorbar image as a numpy array with different labeling methods.
-
-    Args:
-        colorbar_height: Height of the colorbar image
-        colorbar_width: Width of the colorbar image
-        cmap: Matplotlib colormap name
-        c_min: Minimum value for the colorbar
-        c_max: Maximum value for the colorbar
-        method: Display method for the colorbar values. Options:
-            - "identity": Regular values (default)
-            - "log_e": Label as e^value
-            - "log_10": Scientific notation
-        loaded_cmaps: An optional dict containing {name: cmap path}
-        font_size: Size of the font used to render tick labels
-
-    Returns:
-        Numpy array of the colorbar image with values in [0, 1]
     """
-
     h, w = colorbar_height, colorbar_width
+
+    # --- font ---
+    font_obj = _load_font(font, font_size)
+
+    # --- constants ---
+    bar_width = 25
+    text_padding = 15
+    tick_spacing = 10
+
+    # --- labels ---
+    num_ticks = 7
+    tick_values = np.linspace(c_max, c_min, num_ticks)
+    labels = _make_labels(tick_values, method)
+
+    # --- adjust width ---
+    required_width = _required_width(labels, font_obj, bar_width, tick_spacing, text_padding)
+    w = max(w, required_width)
+
+    # --- canvas ---
     img = Image.new("RGB", (w, h), "white")
     draw = ImageDraw.Draw(img)
 
-    try:
-        font = ImageFont.truetype("dejavusans.ttf", font_size)
-    except OSError:
-        font = ImageFont.load_default()  # type: ignore[assignment]
-
-    bar_width = 25
-    bar_x_pos = (w - bar_width) // 6
-    text_padding = 15
+    bar_x_pos = text_padding
     bar_start_y = text_padding
     bar_end_y = h - text_padding
     bar_height = bar_end_y - bar_start_y
+    text_x_pos = bar_x_pos + bar_width + tick_spacing
 
-    # --- get colormap ---
+    # --- colormap ---
     colormap = _get_cmap(cmap, loaded_cmaps)
     gradient = np.linspace(1, 0, bar_height)
     bar_colors_rgba = colormap(gradient)
     bar_colors_rgb = (bar_colors_rgba[:, :3] * 255).astype(np.uint8)
 
-    # --- draw vertical bar ---
+    # --- draw bar ---
     for i in range(bar_height):
         y_pos = bar_start_y + i
         draw.line(
@@ -198,36 +236,18 @@ def generate_colorbar_image(
         )
 
     # --- ticks and labels ---
-    num_ticks = 7
-    tick_values = np.linspace(c_max, c_min, num_ticks)
     tick_positions = np.linspace(bar_start_y, bar_end_y, num_ticks)
-    text_x_pos = bar_x_pos + bar_width + 10
-
-    # Set the formatter based on method
-    if method == "identity":
-        formatter = lambda x: f"{x:.2g}"
-    elif method == "log_e":
-        formatter = lambda x: f"e^{x:.2g}"
-    elif method == "log_10":
-        formatter = format_scientific
-    else:
-        raise ValueError(f"Unsupported method: {method}. Use 'identity', 'log_e', or 'log_10'")
-
-    # draw tick marks and text
-    for i, (val, pos) in enumerate(zip(tick_values, tick_positions, strict=False)):
-        if i == 0:
-            label = f">= {formatter(val)}"
-        elif i == len(tick_values) - 1:
-            label = f"<= {formatter(val)}"
-        else:
-            label = formatter(val)
+    for label, pos in zip(labels, tick_positions, strict=False):
         draw.line(
             [(bar_x_pos + bar_width, pos), (bar_x_pos + bar_width + 5, pos)],
             fill="black",
         )
-        draw.text((text_x_pos, pos - font_size // 2), label, fill="black", font=font)
+        _, _, _, text_height = font_obj.getbbox(label)
+        text_y = int(pos - text_height / 2)
+        draw.text((text_x_pos, text_y), label, fill="black", font=font_obj)
 
-    return np.array(img) / 255.0
+    arr = np.array(img).astype(np.float32) / 255.0
+    return arr[:, :, :3]
 
 
 def estimate_densest_point_distance(points: np.ndarray, k: int = 1000, quantile: float = 0.01) -> np.float64:
