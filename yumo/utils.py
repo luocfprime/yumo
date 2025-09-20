@@ -145,6 +145,7 @@ def generate_colorbar_image(
     c_max: float,
     method: str = "identity",
     loaded_cmaps: dict[str, str] | None = None,
+    font_size: int = 12,
 ) -> np.ndarray:
     """
     Generate a colorbar image as a numpy array with different labeling methods.
@@ -158,7 +159,9 @@ def generate_colorbar_image(
         method: Display method for the colorbar values. Options:
             - "identity": Regular values (default)
             - "log_e": Label as e^value
+            - "log_10": Scientific notation
         loaded_cmaps: An optional dict containing {name: cmap path}
+        font_size: Size of the font used to render tick labels
 
     Returns:
         Numpy array of the colorbar image with values in [0, 1]
@@ -169,7 +172,7 @@ def generate_colorbar_image(
     draw = ImageDraw.Draw(img)
 
     try:
-        font = ImageFont.truetype("dejavusans.ttf", 12)
+        font = ImageFont.truetype("dejavusans.ttf", font_size)
     except OSError:
         font = ImageFont.load_default()  # type: ignore[assignment]
 
@@ -202,16 +205,13 @@ def generate_colorbar_image(
 
     # Set the formatter based on method
     if method == "identity":
-        # method_label = "Linear Scale"
         formatter = lambda x: f"{x:.2g}"
     elif method == "log_e":
-        # method_label = "Natural Log Scale"
         formatter = lambda x: f"e^{x:.2g}"
     elif method == "log_10":
-        # method_label = "Log10 Scale"
         formatter = format_scientific
     else:
-        raise ValueError(f"Unsupported method: {method}. Use 'identity' or 'log_e'")
+        raise ValueError(f"Unsupported method: {method}. Use 'identity', 'log_e', or 'log_10'")
 
     # draw tick marks and text
     for i, (val, pos) in enumerate(zip(tick_values, tick_positions, strict=False)):
@@ -225,7 +225,7 @@ def generate_colorbar_image(
             [(bar_x_pos + bar_width, pos), (bar_x_pos + bar_width + 5, pos)],
             fill="black",
         )
-        draw.text((text_x_pos, pos - 6), label, fill="black", font=font)
+        draw.text((text_x_pos, pos - font_size // 2), label, fill="black", font=font)
 
     return np.array(img) / 255.0
 

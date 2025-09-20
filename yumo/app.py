@@ -70,10 +70,12 @@ class PolyscopeApp:
         if self.config.custom_colormaps_path is not None:
             loaded_cmaps.update(self.prepare_colormaps(self.config.custom_colormaps_path))
 
-        self.context.loaded_materials = list(loaded_materials)
+        self._loaded_materials = list(loaded_materials)
 
         self.context.cmap = get_cmaps()[0]  # initialize default colormap with the first one
-        self.context.loaded_cmaps = loaded_cmaps
+        self._loaded_cmaps = loaded_cmaps
+
+        self._default_view_mat: np.ndarray | None = None
 
         self.slices = Slices("slices", self.context)
         self.structures: dict[str, Structure] = {}
@@ -236,12 +238,12 @@ class PolyscopeApp:
                 return
 
             if psim.Button("Reset Camera View"):
-                if self.context.default_view_mat is None:
+                if self._default_view_mat is None:
                     msg = "Default camera view matrix is not set. Please set it first."
                     logger.warning(msg)
                     ps.warning(msg)
                 else:
-                    ps.set_camera_view_matrix(self.context.default_view_mat)
+                    ps.set_camera_view_matrix(self._default_view_mat)
 
             psim.SameLine()
 
@@ -447,7 +449,7 @@ class PolyscopeApp:
             c_min=self.context.color_min,
             c_max=self.context.color_max,
             method=self.context.data_preprocess_method,
-            loaded_cmaps=self.context.loaded_cmaps,
+            loaded_cmaps=self._loaded_cmaps,
         )
         ps.add_color_image_quantity(
             "colorbar",
@@ -504,7 +506,7 @@ class PolyscopeApp:
             view_mat = load_camera_view(json_str)
             ps.set_camera_view_matrix(view_mat)
 
-            self.context.default_view_mat = view_mat
+            self._default_view_mat = view_mat
 
         ps.set_user_callback(self.callback)
         ps.show()
