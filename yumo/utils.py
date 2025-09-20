@@ -94,7 +94,7 @@ def write_plt_file(path: Path, points: np.ndarray):
     with open(path, "w") as f:
         f.write("variables = x, y, z, Value(m-3)\n")
         f.write(f"zone N={n}, E=0, F=FEPOINT, ET=POINT\n")
-        np.savetxt(f, points, fmt="%.6f")
+        np.savetxt(f, points, fmt="%.6g")
 
 
 def convert_power_of_10_to_scientific(x):
