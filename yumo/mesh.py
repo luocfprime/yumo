@@ -56,7 +56,7 @@ class MeshStructure(Structure):
         self.mesh_surface_area = triangle_areas(self.vertices[self.faces]).sum()
 
         materials = get_materials()
-        default = "0.70_clay_0.30_flat"
+        default = "0.30_clay_0.70_flat"
         self._material = default if default in materials else materials[0]
 
         self._need_update = False
