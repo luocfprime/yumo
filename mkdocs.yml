@@ -64,7 +64,7 @@ extra:
       link: https://github.com/luocfprime/yumo
   alternate:
     - name: English
-      link: en
+      link: /
       lang: en
     - name: Chinese
       link: zh/
