@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 import time
 from contextlib import ContextDecorator
 from functools import wraps
@@ -12,7 +11,6 @@ import trimesh
 from matplotlib.colors import Colormap, LinearSegmentedColormap
 from PIL import Image, ImageDraw, ImageFont
 from scipy.spatial import KDTree
-from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -53,37 +51,35 @@ def load_mesh(file_path: str | Path, return_trimesh: bool = False) -> trimesh.Tr
 
 def parse_plt_file(file_path: str | Path, skip_zeros: bool = False) -> np.ndarray:
     logger.info(f"Parsing file: {file_path}")
-    points = []
 
+    # Find where numeric data starts (skip header lines like "variables =..." / "zone N=...")
+    skiprows = 0
+    total_lines = 0
     with open(file_path) as f:
-        lines = f.readlines()
+        for line in f:
+            total_lines += 1
+            if skiprows == total_lines - 1:
+                parts = line.split()
+                if len(parts) == 4:
+                    try:
+                        float(parts[0])
+                        # data starts here
+                    except ValueError:
+                        skiprows += 1
+                else:
+                    skiprows += 1
 
-    data_pattern = re.compile(
-        r"^\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-        r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-        r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
-        r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*$"
-    )
-
-    for line in tqdm(lines, desc="Processing data"):
-        match = data_pattern.match(line.strip())
-        if not match:
-            continue
-
-        x, y, z, value = map(np.float64, match.groups())
-        if skip_zeros and value == 0.0:
-            continue
-
-        points.append([x, y, z, value])
+    points = np.loadtxt(file_path, skiprows=skiprows, dtype=np.float64)
 
     if skip_zeros:
+        points = points[points[:, 3] != 0.0]
         logger.info("Skipped points with value = 0.0")
 
-    logger.info(f"Kept {len(points):,} points out of {len(lines):,}.")
+    logger.info(f"Kept {len(points):,} points out of {total_lines:,}.")
     if len(points) == 0:
         raise ValueError("No points left after filtering")
 
-    return np.array(points)
+    return points
 
 
 def write_plt_file(path: Path, points: np.ndarray):
