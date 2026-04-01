@@ -406,14 +406,9 @@ class PolyscopeApp:
                             needs_update = True
                             logger.debug(f"Selected colormap: {cmap_name}")
 
-            data_range = self.context.max_value - self.context.min_value
-            v_speed = data_range / 1000.0 if data_range > 0 else 0.01
-
             with ui_item_width(100):
                 # Min/Max value controls
-                changed_min, new_min = psim.DragFloat(
-                    "Min Value", self.context.color_min, v_speed, self.context.min_value, self.context.max_value, "%.4g"
-                )
+                changed_min, new_min = psim.InputFloat("Min Value", self.context.color_min, format="%.4g")
 
                 psim.SameLine()
 
@@ -421,9 +416,7 @@ class PolyscopeApp:
                     self.context.color_min = new_min
                     needs_update = True
 
-                changed_max, new_max = psim.DragFloat(
-                    "Max Value", self.context.color_max, v_speed, self.context.min_value, self.context.max_value, "%.4g"
-                )
+                changed_max, new_max = psim.InputFloat("Max Value", self.context.color_max, format="%.4g")
 
                 psim.SameLine()
 
@@ -438,9 +431,9 @@ class PolyscopeApp:
                     self.context.color_max = self.context.max_value
                     needs_update = True
 
-                changed, fontsize = psim.DragInt("Font Size", self._colorbar_fontsize, 1, 1, 100)
+                changed, fontsize = psim.InputInt("Font Size", self._colorbar_fontsize)
                 if changed:
-                    self._colorbar_fontsize = fontsize
+                    self._colorbar_fontsize = max(1, min(100, fontsize))
                     # no need for needs_update, as this only changes the font size
 
                 if needs_update:

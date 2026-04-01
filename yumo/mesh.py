@@ -249,15 +249,15 @@ class MeshStructure(Structure):
                             self._denoise_method = method
                             self._need_update = self._display_mode == "baked"
 
-            changed, max_dist = psim.DragFloat(
-                "Max Dist for Nearest Neighbour", self._denoise_kwargs.get("max_dist", 16), v_min=1, v_max=16
+            changed, max_dist = psim.InputFloat(
+                "Max Dist for Nearest Neighbour", self._denoise_kwargs.get("max_dist", 16)
             )
             if changed:
                 self._denoise_kwargs["max_dist"] = max_dist
                 self._need_update = self._display_mode == "baked"
 
             if self._denoise_method in ["nearest_and_gaussian", "gaussian"]:
-                changed, sigma = psim.DragFloat("Sigma", self._denoise_kwargs.get("sigma", 1.0), v_min=0.0, v_max=16.0)
+                changed, sigma = psim.InputFloat("Sigma", self._denoise_kwargs.get("sigma", 1.0))
                 if changed:
                     self._denoise_kwargs["sigma"] = sigma
                     self._need_update = self._display_mode == "baked"
