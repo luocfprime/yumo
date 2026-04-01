@@ -6,12 +6,28 @@ from pathlib import Path
 import trimesh
 import typer
 
-from yumo.__about__ import __application__
+from yumo.__about__ import __application__, __version__
 from yumo.app import Config, PolyscopeApp
 from yumo.constants import DATA_PREPROCESS_METHODS
 from yumo.utils import load_mesh, parse_plt_file, write_plt_file
 
+
+def version_callback(value: bool):
+    if value:
+        typer.echo(f"{__application__} {__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
+
+
+@app.callback()
+def main_callback(
+    version: bool = typer.Option(
+        None, "--version", "-v", callback=version_callback, is_eager=True, help="Show version and exit."
+    ),
+):
+    pass
 
 
 def configure_logging(log_level: str):
