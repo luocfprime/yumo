@@ -21,6 +21,7 @@ from yumo.geometry_utils import (
     uv_mask,
 )
 from yumo.ui import ui_combo, ui_item_width, ui_tree_node
+from yumo.utils import tracemalloc_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +127,7 @@ class MeshStructure(Structure):
             self.raw_texture = self.bake_texture(
                 sampler_func=functools.partial(query_scalar_field, data_points=self.app_context.points),
             )
+            tracemalloc_snapshot("mesh.update_data_texture: after bake (KDTree + scatter)")
 
         if self._enable_denoise:
             self._denoise_kwargs["mask"] = self.uv_mask
@@ -135,6 +137,7 @@ class MeshStructure(Structure):
 
         tex = tex * self.uv_mask  # mask out unsampled areas
         self.prepared_quantities[self.QUANTITY_NAME] = tex
+        tracemalloc_snapshot("mesh.update_data_texture: after denoise + mask")
 
     def update_texture(self):
         if self._display_mode == "baked":
@@ -197,6 +200,7 @@ class MeshStructure(Structure):
         )
 
         mesh.add_parameterization_quantity("uv", self.param_corner, defined_on="corners", enabled=True)
+        tracemalloc_snapshot("mesh._do_register: after UV unwrap + uv_mask")
 
     def _ui_texture_map_display(self):
         """Add texture map image"""

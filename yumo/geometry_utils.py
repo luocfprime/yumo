@@ -7,7 +7,7 @@ import xatlas
 from scipy.ndimage import distance_transform_edt, gaussian_filter
 from scipy.spatial import cKDTree
 
-from yumo.utils import profiler
+from yumo.utils import profiler, tracemalloc_snapshot
 
 logger = logging.getLogger(__name__)
 _tree_cache = {}
@@ -223,6 +223,7 @@ def get_tree(data_points: np.ndarray):
     key = hashlib.sha256(data_points.view(np.uint8)).hexdigest()  # type: ignore[arg-type]
     if key not in _tree_cache:
         _tree_cache[key] = cKDTree(data_points[:, :3])
+        tracemalloc_snapshot("get_tree: after cKDTree construction")
     return _tree_cache[key]
 
 

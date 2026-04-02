@@ -29,6 +29,7 @@ from yumo.utils import (
     load_camera_view,
     load_mesh,
     parse_plt_file,
+    tracemalloc_snapshot,
 )
 
 logger = logging.getLogger(__name__)
@@ -152,9 +153,14 @@ class PolyscopeApp:
 
     def prepare_data_and_init_structures(self):
         """Load data from files, create structures."""
+        import tracemalloc
+
+        tracemalloc.start()
+
         # 1. Load raw data
         logger.info(f"Loading data from {self.config.data_path}")
         points = parse_plt_file(self.config.data_path, skip_zeros=self.config.skip_zeros)
+        tracemalloc_snapshot("after parse_plt_file")
         if self.config.sample_rate < 1.0:
             logger.info(
                 f"Downsampling points from {points.shape[0]:,} to {int(points.shape[0] * self.config.sample_rate):,}"
@@ -177,6 +183,7 @@ class PolyscopeApp:
             k=5000,  # TODO: hard-coded
             quantile=0.01,
         )
+        tracemalloc_snapshot("after estimate_densest_point_distance")
 
         if self.config.mesh_path:
             logger.info(f"Loading mesh from {self.config.mesh_path}")
@@ -188,6 +195,8 @@ class PolyscopeApp:
         self.context.color_min = self.context.min_value
         self.context.color_max = self.context.max_value
 
+        tracemalloc_snapshot("after load_mesh + statistics")
+
         # 3. Instantiate structures
         self.structures["points"] = PointCloudStructure("points", self.context, self.context.points, enabled=False)
 
@@ -195,6 +204,8 @@ class PolyscopeApp:
             self.structures["mesh"] = MeshStructure(
                 "mesh", self.context, self.context.mesh_vertices, self.context.mesh_faces, enabled=True
             )
+
+        tracemalloc_snapshot("after instantiate structures")
 
     def update_all_scalar_quantities_colormap(self):
         """Update colormaps on all structures (including slices)."""

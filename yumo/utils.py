@@ -18,6 +18,18 @@ _CMAP_CACHE: dict[str, Colormap] = {}
 _font_warning_logged: bool = False
 
 
+def tracemalloc_snapshot(label: str, top_n: int = 8):
+    import tracemalloc
+
+    if not tracemalloc.is_tracing():
+        return
+    snapshot = tracemalloc.take_snapshot()
+    current, peak = tracemalloc.get_traced_memory()
+    logger.debug(f"[mem] {label} | current={current / 1e6:.1f}MB peak={peak / 1e6:.1f}MB")
+    for stat in snapshot.statistics("lineno")[:top_n]:
+        logger.debug(f"[mem]   {stat}")
+
+
 class profiler(ContextDecorator):
     def __init__(self, name=None, profiler_logger=None):
         self.name = name
