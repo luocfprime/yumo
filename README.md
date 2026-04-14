@@ -1,5 +1,10 @@
 # yumo
 
+> [!WARNING]
+> This project is no longer maintained.
+> Please migrate to **[yumo2](https://github.com/luocfprime/yumo2)**,
+> which provides more accurate and smoother rendering, as well as support for Chinese and plugins.
+
 [![Python Versions](https://img.shields.io/pypi/pyversions/yumo)](https://pypi.org/project/yumo/)
 [![PyPI Version](https://img.shields.io/pypi/v/yumo)](https://pypi.org/project/yumo/)
 

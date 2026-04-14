@@ -1,5 +1,10 @@
 # yumo
 
+!!! warning "Deprecated"
+    This project is no longer maintained.
+    Please migrate to **[yumo2](https://github.com/luocfprime/yumo2)**,
+    which provides more accurate and smoother rendering, as well as support for Chinese and plugins.
+
 Scalar field visualization using Polyscope.
 
 Supported features:
